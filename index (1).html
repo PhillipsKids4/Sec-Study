@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sec+ Gym Cards</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Sec+ Cards">
+<meta name="theme-color" content="#0D141F">
+<link rel="stylesheet" href="exam.css">
+<style>
+  :root{
+    --bg:#0D141F; --panel:#16202E; --panel-2:#1C2938;
+    --ink:#E8EEF6; --muted:#8FA1B8;
+    --green:#43D97B; --amber:#FF8A5B; --red:#FF5D52;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;flex-direction:column; overscroll-behavior:none;
+    user-select:none;-webkit-user-select:none;
+    max-width:640px;margin:0 auto;width:100%;
+  }
+  header{padding:14px 18px 10px;display:flex;align-items:baseline;justify-content:space-between}
+  header h1{font-size:17px;font-weight:800;letter-spacing:-.02em}
+  header h1 span{color:var(--amber)}
+  #streakbox{font-size:13px;color:var(--muted);font-weight:600}
+  #streakbox b{color:var(--green)}
+  #hdrmeta{display:flex;align-items:center;gap:10px}
+  #sync{font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:12px}
+  #sync.ok{background:rgba(67,217,123,.15);color:var(--green)}
+  #sync.off{background:rgba(255,180,84,.15);color:var(--amber)}
+  #sync.unlinked,#sync.syncing{background:rgba(143,161,184,.15);color:var(--muted)}
+  #linkbox{background:var(--panel);border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #2A394C}
+  .lb-t{font-size:15px;font-weight:800;margin-bottom:6px}
+  .lb-s{font-size:12.5px;color:var(--muted);line-height:1.45;margin-bottom:12px}
+  #tok{width:100%;background:var(--bg);border:2px solid #2A394C;border-radius:11px;padding:12px;color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:10px;outline:none;user-select:text;-webkit-user-select:text}
+  #tok:focus{border-color:var(--amber)}
+  #linkbtn{width:100%;border:none;border-radius:12px;padding:14px;background:var(--amber);color:#0D141F;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+  #linkmsg{font-size:12.5px;color:var(--amber);margin-top:10px;min-height:1em}
+  #resetline button{margin:0 8px}
+
+  #home{flex:1;overflow-y:auto;padding:6px 18px 24px}
+  .lead{color:var(--muted);font-size:14px;line-height:1.45;margin-bottom:16px}
+  .dh{font-size:12px;font-weight:800;color:var(--muted);margin:18px 2px 8px;letter-spacing:.02em}
+  .deck{
+    width:100%;text-align:left;background:var(--panel);border:none;border-radius:14px;
+    padding:15px 16px;margin-bottom:10px;color:var(--ink);
+    display:flex;align-items:center;gap:13px;cursor:pointer;font-family:inherit;
+  }
+  .deck:active{background:var(--panel-2)}
+  .jack{width:10px;height:38px;border-radius:4px;flex:none}
+  .deck .t{font-size:16px;font-weight:700}
+  .deck .s{font-size:12.5px;color:var(--muted);margin-top:2px;display:block}
+  .deck .n{margin-left:auto;font-size:13px;font-weight:700;color:var(--muted);flex:none;padding-left:8px}
+  .deck.special{background:linear-gradient(135deg,#232f1f,#16202E)}
+  .deck.special .t{color:var(--green)}
+  #resetline{margin-top:18px;text-align:center}
+  #resetline button{background:none;border:none;color:var(--muted);font-size:12.5px;text-decoration:underline;cursor:pointer;font-family:inherit}
+
+  #session{flex:1;display:none;flex-direction:column;padding:0 18px 18px;min-height:0}
+  #topbar{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  #quit{background:none;border:none;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;padding:6px 6px 6px 0;font-family:inherit}
+  #bar{flex:1;height:6px;background:var(--panel);border-radius:3px;overflow:hidden}
+  #barfill{height:100%;width:0%;background:var(--amber);border-radius:3px;transition:width .25s ease}
+  #count{font-size:13px;color:var(--muted);font-weight:700;min-width:52px;text-align:right}
+
+  #cardwrap{flex:1;perspective:1200px;display:flex;min-height:0}
+  #card{flex:1;position:relative;transform-style:preserve-3d;transition:transform .3s cubic-bezier(.2,.8,.3,1.1)}
+  #card.flipped{transform:rotateX(180deg)}
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:var(--panel);border-radius:18px;display:flex;flex-direction:column;padding:16px;
+  }
+  .face.back{transform:rotateX(180deg);background:var(--panel-2)}
+  .meta{display:flex;align-items:center;gap:10px}
+  .chip{font-size:11.5px;font-weight:800;letter-spacing:.04em;padding:4px 10px;border-radius:20px;color:#0D141F}
+  .lvl{margin-left:auto;display:flex;align-items:center;gap:5px}
+  .lvl .pip{width:8px;height:8px;border-radius:50%;background:#2A394C}
+  .lvl .pip.on{background:var(--amber)}
+  .lvl .lbl{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.03em;margin-left:3px}
+  .qa{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px 4px;overflow-y:auto;min-height:0}
+  .front .qa{font-size:clamp(18px,5vw,25px);font-weight:750;line-height:1.3;letter-spacing:-.01em}
+  .front.mc .qa{flex:none;padding:14px 4px 10px;align-items:flex-start}
+  .back .qa{font-size:clamp(16px,4.6vw,21px);font-weight:600;line-height:1.45;color:var(--ink);white-space:pre-line}
+  .back .qa .big{font-size:clamp(30px,9vw,46px);font-weight:850;letter-spacing:-.02em;display:block;margin-bottom:6px}
+  .hint{text-align:center;font-size:12.5px;color:var(--muted);font-weight:600}
+
+  #opts{display:none;flex-direction:column;gap:9px;overflow-y:auto;padding-bottom:4px;flex:1;min-height:0}
+  .opt{
+    border:2px solid #2A394C;background:var(--bg);border-radius:13px;padding:13px 14px;color:var(--ink);
+    font-size:14.5px;font-weight:650;text-align:left;cursor:pointer;line-height:1.35;font-family:inherit;
+    transition:border-color .12s,background .12s;
+  }
+  .opt:active{background:var(--panel-2)}
+  .opt.right{border-color:var(--green);background:rgba(67,217,123,.12)}
+  .opt.wrong{border-color:var(--red);background:rgba(255,93,82,.12)}
+  .opt:disabled{opacity:1}
+
+  .face.front.mc{overflow-y:auto}
+  .front.mc #opts{flex:none;overflow:visible}
+  #why{display:none;flex:none;background:var(--panel-2);border-radius:12px;padding:12px;margin-top:10px;border-left:4px solid var(--red)}
+  #why .wt{font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--red);margin-bottom:4px}
+  #why .wa{font-size:17px;font-weight:800;margin-bottom:5px}
+  #why .wx{font-size:13.5px;line-height:1.45;color:var(--ink);white-space:pre-line}
+  #why .wh{font-size:13px;line-height:1.4;color:var(--amber);margin-top:7px;font-weight:650}
+  #whynext{width:100%;margin-top:10px;border:none;border-radius:12px;padding:13px;background:var(--amber);color:#0D141F;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+  .dg{width:100%;height:auto;max-height:190px;display:block;margin:2px auto 6px}
+  .dg text{fill:#E8EEF6;font-family:inherit;font-weight:700;font-size:11px}
+  .dg .mt{fill:#8FA1B8;font-weight:600;font-size:10px}
+  .dg .amt{fill:#FFB454}
+  .dg .rdt{fill:#FF5D52}
+  .dg .ln{stroke:#8FA1B8;stroke-width:2;fill:none}
+  .dg .nd{fill:#1C2938;stroke:#4FA3FF;stroke-width:2}
+  .dg .bx{fill:#1C2938;stroke:#8FA1B8;stroke-width:2}
+  .dg .am{stroke:#FFB454;fill:none;stroke-width:2}
+  .dg .rd{stroke:#FF5D52;fill:none;stroke-width:3}
+  .dg .body{fill:#2A394C;stroke:#C9D6E6;stroke-width:2}
+  .dg .fer{fill:#E8EEF6}
+  .qwrap{width:100%}
+  .qcap{font-size:16px;font-weight:750;line-height:1.3;text-align:center;margin-top:2px}
+  .back .qa{display:block}
+  .back .qa .qwrap{padding:4px 0}
+  .xp{font-size:13.5px;line-height:1.55;color:var(--ink);text-align:left;margin-top:12px;padding-top:10px;border-top:1px solid #2A394C;font-weight:500;white-space:normal}
+  .wx2{font-size:13.5px;line-height:1.55;color:var(--ink);margin-top:8px;padding-top:8px;border-top:1px solid #2A394C;font-weight:500}
+  #today{background:linear-gradient(135deg,#1a2536,#16202E);border:1px solid #2A394C;border-radius:16px;padding:14px 14px 12px;margin-bottom:12px}
+  .tdrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+  .tdrow .cd{font-size:22px;font-weight:850;letter-spacing:-.02em;cursor:pointer}
+  .tdrow .cd span{font-size:11.5px;color:var(--muted);font-weight:700;margin-left:6px}
+  .tdrow .st{font-size:13px;color:var(--muted);font-weight:700;text-align:right;white-space:nowrap}
+  .tdrow .st b{color:var(--amber)}
+  .proj{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:6px 0 12px}
+  .pd{font-size:11px;color:var(--muted);font-weight:700}
+  .pd .bar{height:5px;background:#0D141F;border-radius:3px;margin-top:3px;overflow:hidden}
+  .pd .bar i{display:block;height:100%;background:var(--green)}
+  .pd.total{grid-column:1/-1;font-size:12.5px;color:var(--ink);margin-top:2px}
+  .pd.total .bar{height:7px}.pd.total .bar i{background:var(--amber)}
+  #startToday{width:100%;border:none;border-radius:13px;padding:15px;background:var(--green);color:#0D141F;font-weight:850;font-size:16px;font-family:inherit;cursor:pointer}
+  .tdp{display:flex;gap:8px;margin-top:8px}
+  .tdp button{flex:1;border:1px solid #2A394C;border-radius:11px;padding:10px 8px;background:var(--bg);color:var(--ink);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;text-align:left;line-height:1.3}
+  .tdp button small{display:block;color:var(--muted);font-weight:600;font-size:11px;margin-top:2px}
+  .chips{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .chips button{flex:1;border:none;border-radius:12px;padding:12px 6px;background:var(--panel);color:var(--ink);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
+  .chips button:active{background:var(--panel-2)}
+  #twins,#sprint,#ref{flex:1;display:none;flex-direction:column;padding:0 18px 18px;min-height:0;overflow-y:auto}
+  .twq{background:var(--panel);border-radius:16px;padding:22px 16px;text-align:center;font-size:clamp(17px,4.8vw,22px);font-weight:750;line-height:1.35;margin:6px 0 14px;min-height:120px;display:flex;align-items:center;justify-content:center}
+  .twbtns{display:flex;gap:10px}
+  .twbtns button{flex:1;border:2px solid #2A394C;border-radius:14px;padding:20px 8px;background:var(--bg);color:var(--ink);font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;line-height:1.25}
+  .twbtns button.right{border-color:var(--green);background:rgba(67,217,123,.12)}
+  .twbtns button.wrong{border-color:var(--red);background:rgba(255,93,82,.12)}
+  .twnote{font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--panel-2);border-radius:12px;padding:12px;margin-top:12px;min-height:44px}
+  .twnext{width:100%;margin-top:10px;border:none;border-radius:12px;padding:13px;background:var(--amber);color:#0D141F;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+  .bigbtn{width:100%;border:none;border-radius:14px;padding:16px;background:var(--green);color:#0D141F;font-weight:850;font-size:16px;font-family:inherit;cursor:pointer;margin:6px 0 12px}
+  .pairrow{display:flex;justify-content:space-between;padding:10px 12px;background:var(--panel);border-radius:10px;margin-bottom:6px;font-size:13px;font-weight:700}
+  .pairrow span{color:var(--muted);font-weight:600}
+  .sptimer{font-size:44px;font-weight:850;letter-spacing:-.03em;text-align:center;margin:4px 0}
+  .sptimer.low{color:var(--red)}
+  .spscore{text-align:center;color:var(--muted);font-weight:700;font-size:13px;margin-bottom:10px}
+  .spq{text-align:center;font-size:clamp(20px,6vw,30px);font-weight:850;margin:10px 0 14px;min-height:44px;line-height:1.2}
+  .spopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .spopts.wide{grid-template-columns:1fr}
+  .spopts.wide button{padding:13px 8px;font-size:14px}
+  .spopts button{border:2px solid #2A394C;border-radius:14px;padding:18px 6px;background:var(--bg);color:var(--ink);font-size:16px;font-weight:800;font-family:inherit;cursor:pointer}
+  .spopts button.right{border-color:var(--green)}.spopts button.wrong{border-color:var(--red)}
+  .reft{font-size:14px;font-weight:800;color:var(--amber);margin:16px 0 6px}
+  table.rf{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.rf td,table.rf th{padding:6px 8px;border-bottom:1px solid #223042;text-align:left;vertical-align:top}
+  table.rf th{color:var(--muted);font-weight:700;font-size:11px;letter-spacing:.03em}
+  table.rf td:first-child{font-weight:800;white-space:nowrap}
+  .nudgerow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--panel);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:13px;font-weight:700}
+  .hopts{display:flex;gap:6px}
+  .hopts button{border:2px solid #2A394C;background:var(--bg);color:var(--ink);border-radius:9px;padding:6px 9px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer}
+  .hopts button.sel{border-color:var(--amber);color:var(--amber)}
+  .tog{margin-left:auto;border:none;border-radius:9px;padding:7px 14px;background:#2A394C;color:var(--muted);font-weight:800;font-family:inherit;cursor:pointer;font-size:12.5px}
+  .tog.on{background:var(--green);color:#0D141F}
+  .nudgeurl{width:100%;font-size:11.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .nudgeurl button{border:1px solid #2A394C;background:var(--bg);color:var(--ink);border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer}
+  .idle{background:rgba(255,180,84,.14);color:var(--amber);border-radius:10px;padding:8px 10px;font-size:12.5px;font-weight:700;margin-bottom:8px}
+
+  #exq,#miss{display:none;flex-direction:column}
+  .mrow{background:var(--panel);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
+  .mrh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+  .mcat{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  .mrn{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .mrq{font-size:14px;font-weight:700;line-height:1.35}
+  .mra{font-size:13.5px;color:var(--green);font-weight:800;margin-top:3px}
+  .mrx{display:none;font-size:13.5px;line-height:1.5;color:var(--ink);margin-top:8px;padding-top:8px;border-top:1px dashed #2A394C;white-space:pre-line}
+  .mrow.open .mrx{display:block}
+  .mrx .dg{max-height:110px}
+  .xdom{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+  .xq{background:var(--panel);border-radius:16px;padding:16px;font-size:15.5px;font-weight:650;line-height:1.45;margin:4px 0 12px}
+  .xpick{margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #2A394C}
+  .xnote{font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--panel-2);border-radius:12px;padding:12px;margin-top:12px;white-space:pre-line}
+  .wp{margin-top:10px;padding-top:8px;border-top:1px dashed #2A394C}
+  .wpa{font-size:14.5px;font-weight:800;margin:2px 0 4px}
+  .wp .dg{max-height:110px}
+  .hook{font-size:13px;color:var(--amber);font-weight:650;margin-top:8px}
+  #answers{display:flex;gap:12px;margin-top:14px;visibility:hidden}
+  #answers button{flex:1;border:none;border-radius:16px;padding:20px 0;font-size:17px;font-weight:800;cursor:pointer;color:#0D141F;font-family:inherit}
+  #missed{background:var(--red)}
+  #gotit{background:var(--green)}
+  #answers button:active{filter:brightness(1.12)}
+
+  #lab,#pbq{flex:1;display:none;flex-direction:column;padding:0 18px 18px;min-height:0;overflow-y:auto}
+  .tb{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex:none}
+  .tb button{background:none;border:none;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;padding:6px 6px 6px 0;font-family:inherit}
+  .labtitle,#pbqtitle{font-size:16px;font-weight:800;flex:1;line-height:1.2}
+  .pbqp{font-size:14px;color:var(--muted);line-height:1.45;margin:6px 0 12px}
+  .given{background:var(--panel-2);border-radius:12px;padding:12px;font-size:14px;margin-bottom:12px;line-height:1.5}
+  .given b{font-size:20px}
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .mi{border:2px solid #2A394C;background:var(--bg);border-radius:12px;padding:11px 10px;color:var(--ink);font-size:13.5px;font-weight:650;text-align:left;cursor:pointer;line-height:1.3;font-family:inherit}
+  .mi.sel{border-color:var(--amber)}
+  .mi.paired,.mi.used{border-style:dashed;opacity:.8}
+  .mtag{display:block;font-size:11px;color:var(--amber);font-weight:700;margin-top:4px}
+  .mi.ok{border-color:var(--green);border-style:solid;opacity:1}
+  .mi.bad{border-color:var(--red);border-style:solid;opacity:1}
+  .oi{display:flex;align-items:center;gap:10px;margin-bottom:8px;width:100%}
+  .onum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--panel-2);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--amber)}
+  .ghost{background:none;border:1px solid #2A394C;color:var(--muted);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}
+  .fl{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .fi{display:block;width:100%;margin-top:4px;background:var(--bg);border:2px solid #2A394C;border-radius:11px;padding:11px;color:var(--ink);font-size:16px;font-family:inherit;outline:none;user-select:text;-webkit-user-select:text}
+  .fi:focus{border-color:var(--amber)}
+  .fi.ok{border-color:var(--green)}.fi.bad{border-color:var(--red)}
+  .hrow{display:grid;grid-template-columns:40px 1fr 1fr 1fr;gap:6px;width:100%;text-align:left;border:2px solid #2A394C;background:var(--bg);border-radius:12px;padding:10px 8px;color:var(--ink);font-size:11.5px;font-family:inherit;cursor:pointer;margin-bottom:8px;line-height:1.3}
+  .hrow b{font-size:13px}
+  .hrow.sel{border-color:var(--amber)}
+  .hrow.ok{border-color:var(--green)}.hrow.bad{border-color:var(--red)}
+  .opt.sel{border-color:var(--amber)}
+  .out{background:#0A1017;border:1px solid #2A394C;border-radius:12px;padding:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;color:#C9D6E6;margin-bottom:12px;user-select:text;-webkit-user-select:text}
+  #pbqfoot{margin-top:10px;flex:none}
+  #pbqsubmit{width:100%;border:none;border-radius:14px;padding:16px;background:var(--amber);color:#0D141F;font-weight:800;font-size:16px;font-family:inherit;cursor:pointer}
+  #pbqfb{display:none;margin-top:12px;background:var(--panel);border-radius:14px;padding:14px;flex:none}
+  .fbscore{font-size:34px;font-weight:850;letter-spacing:-.02em}
+  .fbwhy{font-size:14px;line-height:1.5;color:var(--ink);margin:6px 0 12px;white-space:pre-line}
+  .fbbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .fbbtns button{flex:1;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer}
+  #fbagain{background:var(--panel-2);color:var(--ink)}
+  #fbnext{background:var(--green);color:#0D141F}
+  #toast{
+    position:fixed;left:50%;top:14%;transform:translateX(-50%) scale(.9);
+    background:var(--amber);color:#0D141F;font-weight:850;font-size:15px;
+    padding:10px 20px;border-radius:24px;opacity:0;pointer-events:none;
+    transition:opacity .25s,transform .25s;z-index:50;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+
+  #done{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  #done h2{font-size:26px;font-weight:850;margin-bottom:8px}
+  #done .score{font-size:56px;font-weight:850;color:var(--green);letter-spacing:-.03em}
+  #done p{color:var(--muted);font-size:14.5px;margin:10px 0 26px;line-height:1.5}
+  #done .actions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+  #done button{border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+  #again{background:var(--amber);color:#0D141F}
+  #drill{background:var(--panel-2);color:var(--red)}
+  #backhome{background:none;color:var(--muted);text-decoration:underline;font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sec+ <span>Gym Cards</span></h1>
+  <div id="hdrmeta"><span id="sync"></span><div id="streakbox"></div></div>
+</header>
+
+<div id="home">
+  <p class="lead">Security+ SY0-701. Cards climb from multiple choice to full recall, and mastered cards come back on a spaced schedule so nothing fades before exam day.</p>
+  <div id="linkbox">
+    <div class="lb-t">Sync across devices</div>
+    <div class="lb-s">Paste a GitHub token that has only <b>Gists: read &amp; write</b>. It's stored on this device only; your progress lives in a secret Gist on your account. Same token on every device = same progress.</div>
+    <input id="tok" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button id="linkbtn">Link GitHub</button>
+    <div id="linkmsg"></div>
+  </div>
+  <div id="today"></div>
+  <div class="chips"><button data-go="exam">Full exam</button><button data-go="exq">Exam questions</button><button data-go="twins">Twins drill</button><button data-go="sprint">Speed rounds</button><button data-go="miss">Miss list</button><button data-go="ref">Reference</button></div>
+  <div id="nudge"></div>
+  <div id="decks"></div>
+  <div id="resetline"><button id="resetbtn">Reset all progress</button><button id="unlinkbtn">Unlink GitHub</button></div>
+</div>
+
+<div id="session">
+  <div id="topbar">
+    <button id="quit">Exit</button>
+    <div id="bar"><div id="barfill"></div></div>
+    <div id="count"></div>
+  </div>
+  <div id="cardwrap">
+    <div id="card">
+      <div class="face front" id="frontFace">
+        <div class="meta"><span class="chip" id="chipF"></span><span class="lvl" id="lvlF"></span></div>
+        <div class="qa" id="qtext"></div>
+        <div id="opts"></div>
+        <div id="why"></div>
+        <div class="hint" id="hintF">tap to flip</div>
+      </div>
+      <div class="face back">
+        <div class="meta"><span class="chip" id="chipB"></span><span class="lvl" id="lvlB"></span></div>
+        <div class="qa" id="atext"></div>
+        <div class="hint">be honest — did you have it?</div>
+      </div>
+    </div>
+  </div>
+  <div id="answers">
+    <button id="missed">Missed it</button>
+    <button id="gotit">Got it</button>
+  </div>
+</div>
+
+<div id="done">
+  <h2 id="doneTitle">Set complete</h2>
+  <div class="score" id="scoreTxt"></div>
+  <p id="doneMsg"></p>
+  <div class="actions">
+    <button id="drill">Drill this set's misses</button>
+    <button id="again">Run it again</button>
+    <button id="backhome">Back to decks</button>
+  </div>
+</div>
+
+<div id="lab">
+  <div class="tb"><button id="labback">Exit</button><div class="labtitle">PBQ Lab</div></div>
+  <p class="lead">Hands-on practice shaped like the real exam's performance-based questions. The hash, firewall-rule and risk-math items generate a fresh problem every attempt.</p>
+  <div id="pbqlist"></div>
+</div>
+<div id="pbq">
+  <div class="tb"><button id="pbqback">Lab</button><div id="pbqtitle"></div></div>
+  <div id="pbqbody"></div>
+  <div id="pbqfoot"><button id="pbqsubmit">Check answers</button></div>
+  <div id="pbqfb"></div>
+</div>
+
+<div id="twins">
+  <div class="tb"><button id="twback">Exit</button><div class="labtitle">Confusable twins</div></div>
+  <div id="twbody"></div>
+</div>
+<div id="sprint">
+  <div class="tb"><button id="spback">Exit</button><div class="labtitle">Speed rounds</div></div>
+  <div id="spbody"></div>
+</div>
+<div id="exq">
+  <div class="tb"><button id="xqback">Exit</button><div class="labtitle">Exam-style questions</div></div>
+  <div id="exqbody"></div>
+</div>
+<div id="miss">
+  <div class="tb"><button id="msback">Exit</button><div class="labtitle">Miss list</div></div>
+  <div id="msbody"></div>
+</div>
+<div id="ref">
+  <div class="tb"><button id="rfback">Exit</button><div class="labtitle">Brain-dump sheet</div></div>
+  <div id="rfbody"></div>
+</div>
+
+<div id="exam"><div id="xmbody"></div></div>
+
+<div id="toast"></div>
+
+<script src="cards-d12.js"></script>
+<script src="cards-d34.js"></script>
+<script src="cards-d45.js"></script>
+<script src="exq.js"></script>
+<script src="twins.js"></script>
+<script src="lab.js"></script>
+<script>
+/* ================= CATEGORIES ================= */
+const CATS = {
+  controls:{name:"Controls & Concepts",        color:"#8AA6FF"},
+  crypto:  {name:"Cryptography & PKI",          color:"#5EE0D8"},
+  ports:   {name:"Secure Ports & Protocols",    color:"#4FA3FF"},
+  actors:  {name:"Threat Actors & Vectors",     color:"#FF9BE0"},
+  social:  {name:"Social Engineering & Malware",color:"#FFD166"},
+  attacks: {name:"Attacks & Indicators",        color:"#FF6B5E"},
+  vulns:   {name:"Vulnerabilities & Mitigations",color:"#F4A261"},
+  arch:    {name:"Architecture & Cloud",        color:"#7FD1AE"},
+  netsec:  {name:"Secure Network Design",       color:"#C9B8FF"},
+  data:    {name:"Data Protection & Resilience",color:"#F2B8C6"},
+  harden:  {name:"Hardening & Endpoints",       color:"#43D97B"},
+  iam:     {name:"Identity & Access",           color:"#B48CFF"},
+  ops:     {name:"Monitoring & Vuln Mgmt",      color:"#9DB2CE"},
+  ir:      {name:"Incident Response & Forensics",color:"#FF8093"},
+  gov:     {name:"Governance, Risk & Compliance",color:"#6EE7B7"},
+  third:   {name:"Third Party, Audits & Awareness",color:"#FFB454"},
+};
+const SECTIONS=[
+  {h:"Domain 1: General Security Concepts (12%)", decks:["controls","crypto","ports"]},
+  {h:"Domain 2: Threats, Vulnerabilities & Mitigations (22%)", decks:["actors","social","attacks","vulns"]},
+  {h:"Domain 3: Security Architecture (18%)", decks:["arch","netsec","data"]},
+  {h:"Domain 4: Security Operations (28%)", decks:["harden","iam","ops","ir"]},
+  {h:"Domain 5: Program Management & Oversight (20%)", decks:["gov","third"]},
+];
+
+/* ================= DIAGRAMS (inline SVG) ================= */
+const DIAG={
+cia:`<svg viewBox="0 0 320 130" class="dg"><polygon points="160,14 296,118 24,118" class="bx"/><text x="160" y="40" text-anchor="middle">Confidentiality</text><text x="60" y="110" text-anchor="middle">Integrity</text><text x="258" y="110" text-anchor="middle">Availability</text><text x="160" y="82" text-anchor="middle" class="amt">CIA triad</text><text x="160" y="97" text-anchor="middle" class="mt">+ non-repudiation</text></svg>`,
+symasym:`<svg viewBox="0 0 320 130" class="dg"><rect x="8" y="10" width="146" height="110" rx="6" class="bx"/><text x="81" y="30" text-anchor="middle" class="amt">Symmetric</text><rect x="58" y="44" width="46" height="26" rx="4" class="nd"/><text x="81" y="61" text-anchor="middle">1 key</text><text x="81" y="90" text-anchor="middle" class="mt">encrypts and decrypts</text><text x="81" y="106" text-anchor="middle" class="mt">fast · bulk data · AES</text><rect x="166" y="10" width="146" height="110" rx="6" class="bx"/><text x="239" y="30" text-anchor="middle" class="amt">Asymmetric</text><rect x="186" y="44" width="46" height="26" rx="4" class="nd"/><text x="209" y="61" text-anchor="middle">Public</text><rect x="246" y="44" width="46" height="26" rx="4" class="nd" style="stroke:#FF8A5B"/><text x="269" y="61" text-anchor="middle">Private</text><text x="239" y="90" text-anchor="middle" class="mt">pair · slow · key exchange</text><text x="239" y="106" text-anchor="middle" class="mt">RSA · ECC · signatures</text></svg>`,
+sig:`<svg viewBox="0 0 320 130" class="dg"><rect x="8" y="46" width="60" height="34" rx="4" class="bx"/><text x="38" y="67" text-anchor="middle">Message</text><path d="M68 63 H96" class="ln"/><rect x="96" y="46" width="52" height="34" rx="4" class="bx"/><text x="122" y="67" text-anchor="middle">Hash</text><path d="M148 63 H176" class="ln"/><rect x="176" y="40" width="72" height="46" rx="4" class="bx" style="stroke:#FF8A5B"/><text x="212" y="58" text-anchor="middle">Encrypt with</text><text x="212" y="74" text-anchor="middle" class="amt">sender PRIVATE</text><path d="M248 63 H276" class="ln"/><rect x="276" y="46" width="40" height="34" rx="4" class="nd"/><text x="296" y="67" text-anchor="middle">Sig</text><text x="160" y="22" text-anchor="middle" class="mt">Sign: hash, then encrypt the hash with the private key</text><text x="160" y="116" text-anchor="middle" class="mt">Verify: decrypt with sender PUBLIC key, compare hashes = integrity + non-repudiation</text></svg>`,
+pki:`<svg viewBox="0 0 320 130" class="dg"><rect x="110" y="8" width="100" height="28" rx="4" class="bx" style="stroke:#FF8A5B"/><text x="160" y="27" text-anchor="middle">Root CA</text><path d="M160 36 V50 M160 50 H80 M160 50 H240 M80 50 V58 M240 50 V58" class="ln"/><rect x="30" y="58" width="100" height="28" rx="4" class="bx"/><text x="80" y="77" text-anchor="middle">Intermediate CA</text><rect x="190" y="58" width="100" height="28" rx="4" class="bx"/><text x="240" y="77" text-anchor="middle">Intermediate CA</text><path d="M80 86 V96 M240 86 V96" class="ln"/><rect x="20" y="96" width="120" height="26" rx="4" class="nd"/><text x="80" y="113" text-anchor="middle">Server / user certs</text><rect x="180" y="96" width="120" height="26" rx="4" class="nd"/><text x="240" y="113" text-anchor="middle">Server / user certs</text></svg>`,
+dot1x:`<svg viewBox="0 0 320 100" class="dg"><rect x="8" y="26" width="84" height="38" rx="4" class="bx"/><text x="50" y="49" text-anchor="middle">Laptop</text><rect x="118" y="26" width="84" height="38" rx="4" class="bx"/><text x="160" y="49" text-anchor="middle">Switch / AP</text><rect x="228" y="26" width="84" height="38" rx="4" class="bx"/><text x="270" y="49" text-anchor="middle">RADIUS</text><path d="M92 45 H118 M202 45 H228" class="ln"/><text x="105" y="20" text-anchor="middle" class="mt">EAPoL</text><text x="215" y="20" text-anchor="middle" class="mt">RADIUS</text><text x="50" y="86" text-anchor="middle" class="amt">Supplicant</text><text x="160" y="86" text-anchor="middle" class="amt">Authenticator</text><text x="270" y="86" text-anchor="middle" class="amt">Auth server</text></svg>`,
+dmz:`<svg viewBox="0 0 320 110" class="dg"><ellipse cx="36" cy="55" rx="30" ry="20" class="bx"/><text x="36" y="59" text-anchor="middle" class="mt">Internet</text><path d="M66 55 H82 M116 55 H130 M214 55 H228 M262 55 H276" class="ln"/><rect x="82" y="40" width="34" height="30" rx="4" class="bx" style="stroke:#FF5D52"/><text x="99" y="59" text-anchor="middle">FW</text><rect x="130" y="24" width="84" height="62" rx="4" class="bx" style="stroke:#FF8A5B"/><text x="172" y="50" text-anchor="middle" class="amt">Screened</text><text x="172" y="66" text-anchor="middle" class="amt">subnet</text><text x="172" y="80" text-anchor="middle" class="mt">web, mail, VPN</text><rect x="228" y="40" width="34" height="30" rx="4" class="bx" style="stroke:#FF5D52"/><text x="245" y="59" text-anchor="middle">FW</text><rect x="276" y="40" width="40" height="30" rx="4" class="bx" style="stroke:#43D97B"/><text x="296" y="59" text-anchor="middle">LAN</text></svg>`,
+vpn:`<svg viewBox="0 0 320 150" class="dg"><path d="M80 33 H240" class="am" stroke-dasharray="7 5" style="stroke-width:3"/><rect x="8" y="18" width="72" height="30" rx="4" class="bx"/><text x="44" y="38" text-anchor="middle">Office A</text><ellipse cx="160" cy="33" rx="40" ry="20" class="bx"/><text x="160" y="37" text-anchor="middle" class="mt">Internet</text><rect x="240" y="18" width="72" height="30" rx="4" class="bx"/><text x="276" y="38" text-anchor="middle">Office B</text><text x="160" y="68" text-anchor="middle" class="amt">Site-to-site: IPsec tunnel, always on</text><path d="M41 110 H240" class="am" stroke-dasharray="7 5" style="stroke-width:3"/><circle cx="30" cy="110" r="11" class="nd"/><text x="30" y="114" text-anchor="middle" style="font-size:9px">PC</text><ellipse cx="160" cy="110" rx="40" ry="20" class="bx"/><text x="160" y="114" text-anchor="middle" class="mt">Internet</text><rect x="240" y="95" width="72" height="30" rx="4" class="bx"/><text x="276" y="115" text-anchor="middle">Office</text><text x="160" y="145" text-anchor="middle" class="amt">Client-to-site: TLS or IPsec, split or full tunnel</text></svg>`,
+zerotrust:`<svg viewBox="0 0 320 130" class="dg"><rect x="8" y="8" width="304" height="52" rx="6" class="bx" style="stroke:#FF8A5B"/><text x="160" y="24" text-anchor="middle" class="amt">CONTROL PLANE</text><text x="86" y="44" text-anchor="middle" class="mt">Policy engine</text><text x="160" y="44" text-anchor="middle" class="mt">Policy administrator</text><text x="246" y="44" text-anchor="middle" class="mt">Adaptive identity</text><path d="M160 60 V72" class="ln"/><rect x="8" y="72" width="304" height="50" rx="6" class="bx"/><text x="160" y="88" text-anchor="middle" class="amt">DATA PLANE</text><text x="60" y="108" text-anchor="middle" class="mt">Subject / system</text><text x="160" y="108" text-anchor="middle" class="mt">Policy enforcement point</text><text x="262" y="108" text-anchor="middle" class="mt">Implicit trust zone</text></svg>`,
+killchain:`<svg viewBox="0 0 320 90" class="dg">${["Recon","Weaponize","Deliver","Exploit","Install","C2","Actions"].map((s,i)=>`<rect x="${6+i*44}" y="30" width="40" height="30" rx="4" class="${i>=3?"nd":"bx"}"/><text x="${26+i*44}" y="49" text-anchor="middle" style="font-size:9px">${s}</text>`).join("")}<text x="160" y="18" text-anchor="middle" class="mt">Cyber kill chain: break it early</text><text x="160" y="80" text-anchor="middle" class="mt">before Exploit = prevention · after = detection and response</text></svg>`,
+irlife:`<svg viewBox="0 0 320 90" class="dg">${["Prepare","Detect","Analyze","Contain","Eradicate","Recover","Lessons"].map((s,i)=>`<rect x="${6+i*44}" y="30" width="40" height="30" rx="4" class="bx" style="stroke:${i===3?"#FF8A5B":"#8FA1B8"}"/><text x="${26+i*44}" y="49" text-anchor="middle" style="font-size:8.5px">${s}</text>`).join("")}<text x="160" y="18" text-anchor="middle" class="mt">Incident response process (SY0-701 order)</text><text x="160" y="80" text-anchor="middle" class="mt">Contain first when asked what to do NEXT; lessons learned closes the loop</text></svg>`,
+saml:`<svg viewBox="0 0 320 120" class="dg"><rect x="8" y="40" width="70" height="34" rx="4" class="bx"/><text x="43" y="61" text-anchor="middle">User</text><rect x="125" y="40" width="70" height="34" rx="4" class="bx" style="stroke:#FF8A5B"/><text x="160" y="56" text-anchor="middle">IdP</text><text x="160" y="69" text-anchor="middle" class="mt">authenticates</text><rect x="242" y="40" width="70" height="34" rx="4" class="bx"/><text x="277" y="56" text-anchor="middle">SP / app</text><text x="277" y="69" text-anchor="middle" class="mt">trusts IdP</text><path d="M78 50 H125 M195 50 H242" class="am"/><text x="101" y="30" text-anchor="middle" class="mt">1. login</text><text x="218" y="30" text-anchor="middle" class="mt">2. signed assertion</text><text x="160" y="104" text-anchor="middle" class="mt">SAML = enterprise SSO (XML). OAuth = delegated authorization. OIDC = identity layer on OAuth.</text></svg>`,
+backups:`<svg viewBox="0 0 320 130" class="dg"><text x="8" y="24" class="amt">Full</text><rect x="70" y="12" width="240" height="16" rx="3" fill="#43D97B"/><text x="8" y="58" class="amt">Incremental</text><rect x="70" y="46" width="60" height="16" rx="3" fill="#8FA1B8"/><rect x="134" y="46" width="60" height="16" rx="3" fill="#8FA1B8"/><rect x="198" y="46" width="60" height="16" rx="3" fill="#8FA1B8"/><text x="8" y="92" class="amt">Differential</text><rect x="70" y="80" width="60" height="16" rx="3" fill="#FF8A5B"/><rect x="70" y="100" width="124" height="16" rx="3" fill="#FF8A5B"/><rect x="70" y="120" width="188" height="8" rx="3" fill="#FF8A5B"/><text x="200" y="72" class="mt">since last ANY backup: small, slow restore</text><text x="200" y="108" class="mt">since last FULL: grows daily, fast restore</text></svg>`,
+hash:`<svg viewBox="0 0 320 110" class="dg"><rect x="8" y="30" width="90" height="34" rx="4" class="bx"/><text x="53" y="51" text-anchor="middle">Any input</text><path d="M98 47 H130" class="ln"/><rect x="130" y="30" width="60" height="34" rx="4" class="bx" style="stroke:#FF8A5B"/><text x="160" y="51" text-anchor="middle">Hash</text><path d="M190 47 H222" class="ln"/><rect x="222" y="30" width="90" height="34" rx="4" class="nd"/><text x="267" y="51" text-anchor="middle">Fixed digest</text><text x="160" y="20" text-anchor="middle" class="mt">One-way · deterministic · no key</text><text x="160" y="86" text-anchor="middle" class="mt">MD5 128-bit (32 hex) · SHA-1 160 (40 hex) · SHA-256 (64 hex) · SHA-512 (128 hex)</text><text x="160" y="102" text-anchor="middle" class="mt">Salt before hashing passwords; collision = two inputs, one digest</text></svg>`,
+fwrules:`<svg viewBox="0 0 320 120" class="dg"><text x="8" y="16" class="amt">#</text><text x="32" y="16" class="amt">Action</text><text x="90" y="16" class="amt">Source</text><text x="170" y="16" class="amt">Dest</text><text x="250" y="16" class="amt">Port</text>${[["1","ALLOW","10.0.10.0/24","any","443"],["2","DENY","any","10.0.20.5","3389"],["3","ALLOW","10.0.10.0/24","10.0.20.5","3389"],["4","DENY","any","any","any"]].map((r,i)=>`<text x="8" y="${36+i*18}" class="mt">${r[0]}</text><text x="32" y="${36+i*18}" style="fill:${r[1]==="DENY"?"#FF5D52":"#43D97B"};font-size:10px">${r[1]}</text><text x="90" y="${36+i*18}" class="mt">${r[2]}</text><text x="170" y="${36+i*18}" class="mt">${r[3]}</text><text x="250" y="${36+i*18}" class="mt">${r[4]}</text>`).join("")}<text x="160" y="114" text-anchor="middle" class="mt">Top-down, first match wins; rule 3 never fires because rule 2 shadows it; last line = implicit deny</text></svg>`,
+controls:`<svg viewBox="0 0 320 120" class="dg"><text x="160" y="14" text-anchor="middle" class="amt">CATEGORY (who/what)  ×  TYPE (when/how)</text>${["Technical","Managerial","Operational","Physical"].map((c,i)=>`<rect x="${8+i*77}" y="26" width="72" height="26" rx="4" class="bx"/><text x="${44+i*77}" y="43" text-anchor="middle" style="font-size:10px">${c}</text>`).join("")}${["Preventive","Deterrent","Detective","Corrective","Compensating","Directive"].map((t,i)=>`<rect x="${8+i*52}" y="70" width="48" height="26" rx="4" class="nd"/><text x="${32+i*52}" y="87" text-anchor="middle" style="font-size:8.5px">${t}</text>`).join("")}<text x="160" y="114" text-anchor="middle" class="mt">Every control is one category AND one type, e.g. a lock = physical + preventive</text></svg>`,
+risk:`<svg viewBox="0 0 320 110" class="dg"><rect x="8" y="14" width="90" height="30" rx="4" class="bx"/><text x="53" y="33" text-anchor="middle">AV × EF</text><path d="M98 29 H128" class="ln"/><rect x="128" y="14" width="64" height="30" rx="4" class="nd"/><text x="160" y="33" text-anchor="middle">= SLE</text><rect x="8" y="60" width="90" height="30" rx="4" class="bx"/><text x="53" y="79" text-anchor="middle">SLE × ARO</text><path d="M98 75 H128" class="ln"/><rect x="128" y="60" width="64" height="30" rx="4" class="nd" style="stroke:#FF8A5B"/><text x="160" y="79" text-anchor="middle">= ALE</text><text x="256" y="33" text-anchor="middle" class="mt">one incident</text><text x="256" y="79" text-anchor="middle" class="mt">per year</text><text x="160" y="104" text-anchor="middle" class="mt">Control is worth it when ALE saved exceeds its annual cost</text></svg>`
+};
+
+/* ================= CARDS (data/cards-*.js) ================= */
+const CARDS=[...CARDS_D12,...CARDS_D34,...CARDS_D45];
+
+/* stable ids so future card edits never scramble progress */
+CARDS.forEach(cd=>{
+  cd.sid=cd.c+"|"+cd.q+(cd.vq?"|"+cd.vq:"");
+  const lines=cd.a.split("\n");
+  const big=lines.find(l=>l.startsWith("#"));
+  cd.short=(cd.s||(big?big.slice(1):lines[0])).trim();
+});
+
+/* ============ STATE / STORAGE (GitHub Gist sync + on-device fallback) ============ */
+const KEY="secplus-cards-v1";
+const TOKKEY="secplus-gh-token";
+const GIDKEY="secplus-gist-id";
+const GFILE="secplus-state.json";
+let stats={};
+let pbq={};
+let exq={};
+let exam="2026-10-28",days={},twins={},sprint={};
+let examHist=[]; // full-exam attempts (exam/engine.js)
+let remind={on:true,hours:4},lastStudy=0,owner="";
+try{owner=localStorage.getItem("secplus-gh-owner")||"";}catch(e){}
+let sessionsDone=0;
+let updatedAt=0;
+let token="",gistId="";
+try{token=localStorage.getItem(TOKKEY)||"";gistId=localStorage.getItem(GIDKEY)||"";}catch(e){}
+
+function payload(){return {stats,pbq,exq,examHist,sessionsDone,updatedAt,exam,days,twins,sprint,remindOn:remind.on?"yes":"no",remindHours:remind.hours,lastStudy:lastStudy?new Date(lastStudy).toISOString():"",nudgeAfter:lastStudy?new Date(lastStudy+remind.hours*3600000).toISOString():""};}
+function adopt(d){stats=d.stats||{};pbq=d.pbq||{};exq=d.exq||{};examHist=Array.isArray(d.examHist)?d.examHist:[];sessionsDone=d.sessionsDone||0;updatedAt=d.updatedAt||0;exam=d.exam||"2026-10-28";days=d.days||{};twins=d.twins||{};sprint=d.sprint||{};remind={on:!(d.remindOn===false||d.remindOn==="no"),hours:+d.remindHours||4};lastStudy=d.lastStudy?(Date.parse(d.lastStudy)||0):0;}
+function localGet(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null;}catch(e){return null;}}
+function localSet(){try{localStorage.setItem(KEY,JSON.stringify(payload()));}catch(e){}}
+
+function gh(path,opts){
+  opts=opts||{};
+  const h={"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};
+  if(opts.body)h["Content-Type"]="application/json";
+  return fetch("https://api.github.com"+path,{method:opts.method||"GET",headers:h,body:opts.body,cache:"no-store"});
+}
+async function findGist(){
+  if(gistId){
+    const r=await gh("/gists/"+gistId);
+    if(r.ok)return await r.json();
+    if(r.status!==404)return null;
+    gistId="";try{localStorage.removeItem(GIDKEY);}catch(e){}
+  }
+  const r=await gh("/gists?per_page=100");
+  if(!r.ok)return null;
+  const list=await r.json();
+  const hit=Array.isArray(list)?list.find(g=>g.files&&g.files[GFILE]):null;
+  if(hit){
+    gistId=hit.id;try{localStorage.setItem(GIDKEY,gistId);}catch(e){}
+    const r2=await gh("/gists/"+gistId);
+    return r2.ok?await r2.json():null;
+  }
+  const c=await gh("/gists",{method:"POST",body:JSON.stringify({description:"Sec+ Gym Cards progress",public:false,files:{[GFILE]:{content:"{}"}}})});
+  if(!c.ok)return null;
+  const made=await c.json();
+  gistId=made.id;try{localStorage.setItem(GIDKEY,gistId);}catch(e){}
+  return made;
+}
+async function serverGet(){
+  if(!token)return null;
+  try{
+    const g=await findGist();
+    if(!g)return null;
+    if(g.owner&&g.owner.login){owner=g.owner.login;try{localStorage.setItem("secplus-gh-owner",owner);}catch(e){}}
+    const f=g.files&&g.files[GFILE];
+    if(!f)return {};
+    let content=f.content;
+    if(f.truncated&&f.raw_url){const r=await fetch(f.raw_url,{cache:"no-store"});content=await r.text();}
+    const d=JSON.parse(content||"{}");
+    return (d&&typeof d==="object")?d:{};
+  }catch(e){return null;}
+}
+async function serverPut(){
+  if(!token||!gistId)return false;
+  try{
+    const r=await gh("/gists/"+gistId,{method:"PATCH",body:JSON.stringify({files:{[GFILE]:{content:JSON.stringify(payload())}}})});
+    return r.ok;
+  }catch(e){return false;}
+}
+const SYNC_LABEL={ok:"synced",off:"local only",unlinked:"not linked",syncing:"syncing"};
+function setSync(state){
+  const el=document.querySelector("#sync");
+  if(!el)return;
+  el.textContent=SYNC_LABEL[state]||state;
+  el.className=state;
+}
+function homeVisible(){return document.querySelector("#home").style.display!=="none";}
+async function loadState(){
+  const local=localGet();
+  if(local)adopt(local);
+  renderHome();
+  if(!token){setSync("unlinked");return;}
+  setSync("syncing");
+  const remote=await serverGet();
+  if(remote===null){setSync("off");return;}
+  const chosen=(!local)?remote:(((local.updatedAt||0)>(remote.updatedAt||0))?local:remote);
+  adopt(chosen);
+  localSet();
+  if((remote.updatedAt||0)<updatedAt)await serverPut();
+  setSync("ok");
+  if(homeVisible())renderHome();
+}
+async function saveState(){
+  updatedAt=Date.now();
+  localSet();
+  if(!token){setSync("unlinked");return;}
+  const ok=await serverPut();
+  setSync(ok?"ok":"off");
+}
+function stat(cd){return stats[cd.sid]||(stats[cd.sid]={seen:0,right:0,streak:0,level:1,due:0,ivl:0});}
+function mastered(cd){const s=stats[cd.sid];return !!s&&s.level>=3&&s.streak>=2;}
+function isWeak(cd){return !mastered(cd);}
+function isDue(cd){return mastered(cd)&&(stats[cd.sid].due||0)<=Date.now();}
+
+/* ================= HOME ================= */
+const $=q=>document.querySelector(q);
+function renderHome(){
+  $("#home").style.display="block";
+  $("#session").style.display="none";
+  $("#done").style.display="none";
+  $("#linkbox").style.display=token?"none":"block";
+  $("#unlinkbtn").style.display=token?"inline":"none";
+  $("#lab").style.display="none";$("#pbq").style.display="none";$("#twins").style.display="none";$("#sprint").style.display="none";$("#ref").style.display="none";$("#exq").style.display="none";$("#miss").style.display="none";$("#exam").style.display="none";
+  if(sp.timer){clearInterval(sp.timer);sp.timer=null;}
+  renderToday();renderNudge();
+  const weakN=CARDS.filter(isWeak).length;
+  const m=CARDS.length-weakN;
+  $("#streakbox").innerHTML = sessionsDone?`<b>${m}</b>/${CARDS.length} mastered`:"";
+  let html="";
+  html+=deckBtn("weak","Weak spots",weakN?`${weakN} cards not yet mastered`:"All mastered — run any deck to stay sharp",weakN||CARDS.length,"var(--green)",true);
+  html+=deckBtn("all","Everything, shuffled","20 random from the full stack",CARDS.length,"var(--amber)",false);
+  html+=`<div class="dh">Full exam (timed, scored like the real thing)</div>`+deckBtn("exam","Take a full 90-question exam",examHist.length?`Last: ${examHist[examHist.length-1].scaled} · ${examHist[examHist.length-1].raw}% · ${examHist.length} attempt${examHist.length>1?"s":""}`:"90 minutes, PBQs first, confidence tracking, 720 to pass",examHist.length?(examHist[examHist.length-1].pass?"PASS":"retry"):"new","var(--amber)",true);
+  html+=`<div class="dh">PBQ Lab (hands-on, exam-style)</div>`+deckBtn("lab","Open PBQ Lab","Matching, ordering, hash ID, firewall rules, risk math, exhibits",labCount(),"var(--green)",true);
+  for(const sec of SECTIONS){
+    html+=`<div class="dh">${sec.h}</div>`;
+    for(const k of sec.decks){
+      const pool=CARDS.filter(c=>c.c===k);
+      const mk=pool.filter(mastered).length;
+      html+=deckBtn(k,CATS[k].name,subtitle(k),`${mk}/${pool.length}`,CATS[k].color,false);
+    }
+  }
+  $("#decks").innerHTML=html;
+  document.querySelectorAll(".deck").forEach(b=>b.onclick=()=>startSession(b.dataset.k));
+  document.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>({twins:renderTwins,sprint:renderSprint,ref:renderRef,exq:renderExq,miss:renderMiss,exam:renderExam})[b.dataset.go]());
+}
+function subtitle(k){
+  return {
+    controls:"CIA, control matrix, zero trust, change mgmt",
+    crypto:"Symmetric vs asymmetric, hashing, PKI, revocation",
+    ports:"The free points — make them automatic",
+    actors:"Who attacks, why, and through what vector",
+    social:"Phishing family, pretexting, malware types",
+    attacks:"Network, app, crypto, password attacks + indicators",
+    vulns:"Vuln types and the mitigation that fits",
+    arch:"Cloud models, IaC, containers, IoT/ICS",
+    netsec:"Zones, firewalls, VPN, NAC, SASE",
+    data:"States, classification, backups, sites, RTO/RPO",
+    harden:"Baselines, mobile, wireless, app security",
+    iam:"SSO protocols, MFA, access models, PAM",
+    ops:"SIEM, scanning, CVSS, automation. Biggest domain: 28%",
+    ir:"IR order, forensics, chain of custody",
+    gov:"Policies, risk math, privacy roles",
+    third:"Agreements, audits, pen tests, awareness"
+  }[k]||"";
+}
+function deckBtn(k,t,s,n,color,special){
+  return `<button class="deck ${special?"special":""}" data-k="${k}">
+    <span class="jack" style="background:${color}"></span>
+    <span><span class="t">${t}</span><span class="s">${s}</span></span>
+    <span class="n">${n}</span></button>`;
+}
+$("#resetbtn").onclick=async()=>{
+  if(!confirm("Wipe all card progress?"))return;
+  stats={};pbq={};exq={};examHist=[];days={};twins={};sprint={};sessionsDone=0;await saveState();renderHome();
+};
+
+/* ================= SESSION ================= */
+let queue=[],idx=0,total=0,missedThis=[],rightThis=0,lastDeck="all",flipped=false,locked=false;
+
+function pickDeck(k){
+  let pool;
+  if(k==="all")pool=[...CARDS];
+  else if(k==="weak"){pool=CARDS.filter(isWeak);if(!pool.length)pool=[...CARDS];}
+  else pool=CARDS.filter(c=>c.c===k);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  return pool.slice(0,20).map(cd=>({cd,recycled:false}));
+}
+function startSession(k){
+  if(k==="lab")return renderLab();
+  if(k==="exam")return renderExam();
+  if(k==="today")return startTodaySet(todaySet());
+  lastDeck=k;
+  queue=pickDeck(k);
+  idx=0;total=queue.length;missedThis=[];rightThis=0;
+  $("#home").style.display="none";$("#done").style.display="none";
+  $("#session").style.display="flex";
+  showCard();
+}
+function lvlHtml(level){
+  let pips="";
+  for(let i=1;i<=3;i++)pips+=`<span class="pip ${i<=level?"on":""}"></span>`;
+  const names={1:"EASY",2:"HARD",3:"RECALL"};
+  return pips+`<span class="lbl">${names[level]}</span>`;
+}
+function showCard(){
+  if(idx>=queue.length)return endSession();
+  const {cd}=queue[idx];
+  const s=stat(cd);
+  const level=s.level;
+  flipped=false;locked=false;
+  $("#card").classList.remove("flipped");
+  $("#why").style.display="none";$("#hintF").style.display="block";
+  const cat=CATS[cd.c];
+  $("#chipF").textContent=cat.name;$("#chipF").style.background=cat.color;
+  $("#chipB").textContent=cat.name;$("#chipB").style.background=cat.color;
+  $("#lvlF").innerHTML=lvlHtml(level);
+  $("#lvlB").innerHTML=lvlHtml(level);
+  if(cd.vq)$("#qtext").innerHTML=`<div class="qwrap">${DIAG[cd.vq]}<div class="qcap">${esc(cd.q)}</div></div>`;
+  else $("#qtext").textContent=cd.q;
+
+  $("#atext").innerHTML=`<div class="qwrap">${answerHtml(cd)}</div>`;
+
+  const front=$("#frontFace");
+  if(level<3){
+    front.classList.add("mc");
+    $("#hintF").textContent="pick one";
+    $("#answers").style.visibility="hidden";
+    renderOptions(cd,level===1?3:4);
+    $("#opts").style.display="flex";
+  }else{
+    front.classList.remove("mc");
+    $("#hintF").textContent="tap to flip";
+    $("#opts").style.display="none";
+    $("#answers").style.visibility="hidden";
+  }
+  $("#barfill").style.width=(idx/total*100)+"%";
+  $("#count").textContent=`${Math.min(idx+1,total)} / ${total}`;
+}
+function renderOptions(cd,nOpts){
+  const pool=CARDS.filter(x=>x.sid!==cd.sid&&x.short!==cd.short&&(cd.g?x.g===cd.g:(x.c===cd.c&&!x.g)));
+  const seen=new Set([cd.short]);
+  const distractors=[];
+  const shuffled=[...pool];
+  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  for(const x of shuffled){
+    if(distractors.length>=nOpts-1)break;
+    if(seen.has(x.short))continue;
+    seen.add(x.short);distractors.push(x.short);
+  }
+  const opts=[{t:cd.short,right:true},...distractors.map(t=>({t,right:false}))];
+  for(let i=opts.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[opts[i],opts[j]]=[opts[j],opts[i]];}
+  const box=$("#opts");
+  box.innerHTML="";
+  opts.forEach(o=>{
+    const b=document.createElement("button");
+    b.className="opt";b.textContent=o.t;
+    b.onclick=()=>pickOption(b,o.right);
+    box.appendChild(b);
+  });
+}
+function pickOption(btn,right){
+  if(locked)return;locked=true;
+  const {cd}=queue[idx];
+  document.querySelectorAll(".opt").forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===cd.short)b.classList.add("right");
+  });
+  if(right){setTimeout(()=>answer(true),550);return;}
+  btn.classList.add("wrong");
+  const t=btn.textContent;
+  const picked=CARDS.find(x=>x.sid!==cd.sid&&x.short===t&&(cd.g?x.g===cd.g:x.c===cd.c))||CARDS.find(x=>x.sid!==cd.sid&&x.short===t);
+  showWhy(cd,picked);
+}
+function answerHtml(cd){
+  let h=cd.v?`<div class="qwrap">${DIAG[cd.v]}</div>`:"";
+  cd.a.split("\n").forEach(line=>{
+    if(line.startsWith("#"))h+=`<span class="big">${esc(line.slice(1))}</span>`;
+    else h+=`<div>${esc(line)}</div>`;
+  });
+  if(cd.w)h+=`<div class="hook">Hook: ${esc(cd.w)}</div>`;
+  if(cd.x)h+=`<div class="xp">${esc(cd.x)}</div>`;
+  return h;
+}
+function pickedHtml(pk){
+  if(!pk)return "";
+  const line=pk.a.split("\n").filter(l=>!l.startsWith("#"))[0]||"";
+  const body=pk.vq?esc(line):`That's the answer to "${esc(pk.q)}"${line?": "+esc(line):""}.`;
+  return `<div class="wp"><div class="wt" style="color:var(--amber)">What you picked</div><div class="wpa">${esc(pk.short)}</div>${pk.vq?`<div class="qwrap">${DIAG[pk.vq]}</div>`:""}<div class="wx">${body}</div></div>`;
+}
+function showWhy(cd,picked){
+  const lines=cd.a.split("\n");
+  const big=lines.find(l=>l.startsWith("#"));
+  let rest=lines.filter(l=>!l.startsWith("#"));
+  if(big&&big.slice(1).trim()!==cd.short)rest.unshift(big.slice(1).trim());
+  const w=$("#why");
+  w.innerHTML=(cd.v?`<div class="qwrap">${DIAG[cd.v]}</div>`:"")+`<div class="wt">Correct answer</div><div class="wa">${esc(cd.short)}</div>`+
+    (rest.length?`<div class="wx">${esc(rest.join("\n"))}</div>`:"")+
+    pickedHtml(picked)+
+    (cd.w?`<div class="wh">Hook: ${esc(cd.w)}</div>`:"")+
+    (cd.x?`<div class="wx2">${esc(cd.x)}</div>`:"")+
+    `<button id="whynext">Got it — next card</button>`;
+  w.style.display="block";
+  $("#hintF").style.display="none";
+  $("#whynext").onclick=()=>answer(false);
+  w.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+$("#card").onclick=()=>{
+  if(!queue[idx])return;
+  const s=stat(queue[idx].cd);
+  if(s.level<3)return;
+  flipped=!flipped;
+  $("#card").classList.toggle("flipped",flipped);
+  $("#answers").style.visibility=flipped?"visible":"hidden";
+};
+$("#gotit").onclick=()=>answer(true);
+$("#missed").onclick=()=>answer(false);
+
+function toast(msg){
+  const t=$("#toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1300);
+}
+function answer(right){
+  const item=queue[idx];
+  const cd=item.cd;
+  const s=stat(cd);
+  s.seen++;
+  if(right){
+    s.right++;s.streak++;rightThis++;
+    if(s.level<3){
+      if(s.streak>=2){s.level++;s.streak=0;toast(s.level===3?"Level up — full recall":"Level up — harder choices");}
+    }else if(s.streak>=2){
+      s.ivl=s.ivl?Math.min(s.ivl*2,7):2;
+      s.due=Date.now()+s.ivl*86400000;
+      toast((s.streak===2?"Mastered":"Still solid")+" — back in "+s.ivl+" day"+(s.ivl>1?"s":""));
+    }
+  }else{
+    s.streak=0;
+    if(s.level===3&&s.ivl){s.level=2;s.ivl=0;s.due=0;}
+    if(!missedThis.includes(cd))missedThis.push(cd);
+    if(!item.recycled){queue.push({cd,recycled:true});total++;}
+  }
+  bumpDay(1);
+  idx++;
+  saveState();
+  showCard();
+}
+$("#quit").onclick=()=>renderHome();
+
+/* ================= DONE ================= */
+function endSession(){
+  sessionsDone++;saveState();
+  $("#session").style.display="none";
+  $("#done").style.display="flex";
+  const pct=total?Math.round(rightThis/total*100):0;
+  $("#scoreTxt").textContent=pct+"%";
+  $("#scoreTxt").style.color = pct>=80?"var(--green)":pct>=60?"var(--amber)":"var(--red)";
+  const u=missedThis.length;
+  $("#doneTitle").textContent = pct>=80?"Set complete — strong":"Set complete";
+  $("#doneMsg").textContent = u
+    ? `${u} card${u>1?"s":""} missed this set — streaks reset, so they'll keep showing up until you climb them back to Recall.`
+    : "Clean set. Every card here climbed toward mastery.";
+  $("#drill").style.display=u?"block":"none";
+}
+$("#again").onclick=()=>startSession(lastDeck);
+$("#backhome").onclick=()=>renderHome();
+$("#drill").onclick=()=>{
+  queue=missedThis.map(cd=>({cd,recycled:false}));
+  idx=0;total=queue.length;missedThis=[];rightThis=0;
+  $("#done").style.display="none";$("#session").style.display="flex";
+  showCard();
+};
+
+/* ================= PBQ LAB ================= */
+const PBQS=[...LAB_PBQS,
+{id:"g-hashid",type:"hashid",title:"Identify the hash",prompt:"Read the digest, name the algorithm, give its bit length. Every attempt is a brand-new digest."},
+{id:"g-fwrule",type:"fwrule",title:"Firewall rule evaluation",prompt:"Walk the rule table top-down for the packet shown. Every attempt is a new table."},
+{id:"g-risk",type:"risk",title:"Risk math: SLE, ALE, cost-benefit",prompt:"Compute the loss figures and decide whether the control is worth buying. Every attempt uses new numbers."}
+];
+const TYPENAME={match:"Matching (drag-and-drop style)",order:"Put in order",hashid:"Hash identification",fwrule:"Firewall rule evaluation",risk:"Risk calculation",scenario:"Exhibit question"};
+const TYPECOL={match:"#4FA3FF",order:"#FFD166",hashid:"#5EE0D8",fwrule:"#FF8093",risk:"#6EE7B7",scenario:"#B48CFF"};
+let cur=null,W={},curIdx=0;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function labCount(){return PBQS.filter(p=>pbq[p.id]).length+"/"+PBQS.length;}
+function renderLab(){
+  $("#home").style.display="none";$("#pbq").style.display="none";$("#lab").style.display="flex";
+  let html="";
+  PBQS.forEach(p=>{
+    const s=pbq[p.id];const best=s?Math.round(s.best):null;
+    const col=best===null?"var(--muted)":best>=80?"var(--green)":best>=50?"var(--amber)":"var(--red)";
+    html+=`<button class="deck" data-id="${p.id}"><span class="jack" style="background:${TYPECOL[p.type]}"></span><span><span class="t">${esc(p.title)}</span><span class="s">${TYPENAME[p.type]}${s?" — "+s.attempts+" attempt"+(s.attempts>1?"s":""):""}</span></span><span class="n" style="color:${col}">${best===null?"new":best+"%"}</span></button>`;
+  });
+  $("#pbqlist").innerHTML=html;
+  document.querySelectorAll("#pbqlist .deck").forEach(b=>b.onclick=()=>startPbq(b.dataset.id));
+}
+function startPbq(id){
+  curIdx=PBQS.findIndex(p=>p.id===id);cur=PBQS[curIdx];W={};
+  $("#lab").style.display="none";$("#pbq").style.display="flex";
+  $("#pbqtitle").textContent=cur.title;
+  $("#pbqfb").style.display="none";$("#pbqsubmit").style.display="block";
+  ({match:buildMatch,order:buildOrder,hashid:buildHashid,fwrule:buildFwrule,risk:buildRisk,scenario:buildScenario})[cur.type](cur);
+  $("#pbq").scrollTop=0;
+}
+/* --- matching --- */
+function buildMatch(p){
+  W={sel:null,assign:{},L:shuffle(p.pairs.map((x,i)=>({t:x[0],i}))),R:shuffle(p.pairs.map((x,i)=>({t:x[1],i})))};
+  $("#pbqbody").innerHTML=`<p class="pbqp">${esc(p.prompt)}</p><div class="mgrid"><div class="mcol" id="mL"></div><div class="mcol" id="mR"></div></div>`;
+  drawMatch();
+}
+function drawMatch(){
+  const L=$("#mL"),R=$("#mR");L.innerHTML="";R.innerHTML="";
+  const used=new Set(Object.values(W.assign));
+  W.L.forEach(it=>{
+    const b=document.createElement("button");b.className="mi";b.textContent=it.t;
+    const paired=W.assign[it.i]!==undefined;
+    if(W.sel===it.i)b.classList.add("sel");
+    if(paired){b.classList.add("paired");const tag=document.createElement("span");tag.className="mtag";tag.textContent="\u2192 "+cur.pairs[W.assign[it.i]][1];b.appendChild(tag);}
+    if(W.locked)b.classList.add(paired&&W.assign[it.i]===it.i?"ok":"bad");
+    b.onclick=()=>{if(W.locked)return;if(paired){delete W.assign[it.i];W.sel=null;}else W.sel=(W.sel===it.i)?null:it.i;drawMatch();};
+    L.appendChild(b);
+  });
+  W.R.forEach(it=>{
+    const b=document.createElement("button");b.className="mi";b.textContent=it.t;
+    if(used.has(it.i))b.classList.add("used");
+    b.onclick=()=>{if(W.locked||W.sel===null||used.has(it.i))return;W.assign[W.sel]=it.i;W.sel=null;drawMatch();};
+    R.appendChild(b);
+  });
+}
+function checkMatch(){
+  let ok=0;cur.pairs.forEach((_,i)=>{if(W.assign[i]===i)ok++;});
+  W.locked=true;drawMatch();
+  const miss=[];
+  cur.pairs.forEach((x,i)=>{const j=W.assign[i];if(j===undefined)miss.push(esc(x[0])+" was left unmatched.");else if(j!==i)miss.push("You paired "+esc(x[0])+" with "+esc(cur.pairs[j][1])+", but that belongs to "+esc(cur.pairs[j][0])+".");});
+  return {score:ok/cur.pairs.length*100,why:`${ok} of ${cur.pairs.length} pairs right.`+(miss.length?"\n\n"+miss.join("\n"):"")+"\n\nFull answer key:\n"+cur.pairs.map(x=>esc(x[0])+" \u2192 "+esc(x[1])).join("\n")};
+}
+/* --- ordering --- */
+function buildOrder(p){
+  W={seq:[],items:shuffle(p.steps.map((t,i)=>({t,i})))};
+  if(W.items.every((it,k)=>it.i===k))[W.items[0],W.items[1]]=[W.items[1],W.items[0]];
+  $("#pbqbody").innerHTML=`<p class="pbqp">${esc(p.prompt)}</p><div id="olist"></div><button class="ghost" id="oundo">Undo last</button>`;
+  $("#oundo").onclick=()=>{if(W.locked)return;W.seq.pop();drawOrder();};
+  drawOrder();
+}
+function drawOrder(){
+  const box=$("#olist");box.innerHTML="";
+  W.items.forEach(it=>{
+    const pos=W.seq.indexOf(it.i);
+    const b=document.createElement("button");b.className="mi oi";
+    const n=document.createElement("span");n.className="onum";n.textContent=pos>=0?pos+1:"";b.appendChild(n);
+    b.appendChild(document.createTextNode(it.t));
+    if(pos>=0)b.classList.add("paired");
+    if(W.locked)b.classList.add(pos>=0&&pos===it.i?"ok":"bad");
+    b.onclick=()=>{if(W.locked||pos>=0)return;W.seq.push(it.i);drawOrder();};
+    box.appendChild(b);
+  });
+}
+function checkOrder(){
+  let ok=0;W.seq.forEach((v,k)=>{if(v===k)ok++;});
+  W.locked=true;drawOrder();
+  const miss=[];
+  cur.steps.forEach((s,i)=>{const k=W.seq.indexOf(i);if(k===-1)miss.push("You never placed \""+esc(s)+"\" (it's step "+(i+1)+").");else if(k!==i)miss.push("\""+esc(s)+"\" is step "+(i+1)+"; you put it at "+(k+1)+".");});
+  return {score:ok/cur.steps.length*100,why:`${ok} of ${cur.steps.length} in the right position.`+(miss.length?"\n\n"+miss.join("\n"):"")+"\n\nCorrect order:\n"+cur.steps.map((s,i)=>(i+1)+". "+esc(s)).join("\n")};
+}
+/* ---------- generators shared by the PBQ Lab and Exam mode ---------- */
+const HASHALG=[{n:"MD5",bits:128},{n:"SHA-1",bits:160},{n:"SHA-256",bits:256},{n:"SHA-512",bits:512}];
+function randHex(n){let s="";for(let i=0;i<n;i++)s+="0123456789abcdef"[Math.floor(Math.random()*16)];return s;}
+function genHash(){const a=HASHALG[Math.floor(Math.random()*HASHALG.length)];const hex=a.bits/4;const b64=Math.random()<0.3;let str=randHex(hex);let enc="hex";
+  if(b64){const bytes=[];for(let i=0;i<a.bits/8;i++)bytes.push(Math.floor(Math.random()*256));str=btoa(String.fromCharCode(...bytes));enc="base64";}
+  const ctx=["a password hash in /etc/shadow-style dump","a file checksum published next to a download","a digest in a digital signature header","an integrity value in a FIM alert"][Math.floor(Math.random()*4)];
+  return {alg:a.n,bits:a.bits,str,enc,hexLen:hex,ctx,order:shuffle(HASHALG.map(x=>x.n))};}
+function hashHtml(g,prompt){return `<p class="pbqp">${esc(prompt)}</p><div class="given" style="word-break:break-all;font-family:ui-monospace,Menlo,monospace;font-size:13px">${esc(g.str)}</div><p class="pbqp">Seen as ${esc(g.ctx)}. It is ${g.enc==="hex"?g.str.length+" hex characters":"Base64, "+g.str.length+" characters"}.</p><p class="pbqp" style="color:var(--ink);font-weight:700">Which algorithm produced it?</p><div class="hx-opts" style="display:flex;flex-direction:column;gap:9px">${g.order.map(n=>`<button class="opt" data-alg="${n}">${n}</button>`).join("")}</div><label class="fl" style="margin-top:12px">Digest length in bits<input class="fi" data-k="bits" inputmode="numeric" placeholder="e.g. 256" autocomplete="off"></label>`;}
+function hashCheck(g,alg,bits){let ok=0;const notes=[];if(alg===g.alg)ok++;else notes.push((alg?"You picked "+alg+". ":"No algorithm picked. ")+"Length is the tell: "+g.hexLen+" hex characters × 4 bits = "+g.bits+" bits = "+g.alg+".");const b=parseInt(bits,10);if(b===g.bits)ok++;else notes.push("Bit length: "+(bits?"you entered "+bits:"blank")+"; "+g.alg+" produces "+g.bits+" bits."+(g.enc==="base64"?" Base64 decodes to "+(g.bits/8)+" bytes.":""));
+  return {score:ok/2*100,why:`${ok} of 2.`+(notes.length?"\n\n"+notes.join("\n"):"")+"\n\nLadder: MD5 128 bits = 32 hex · SHA-1 160 = 40 hex · SHA-256 = 64 hex · SHA-512 = 128 hex. Hex chars × 4 = bits; Base64 chars × 6 ≈ bits."};}
+
+const FWNETS=[["10.0.10.0/24","user LAN"],["10.0.20.0/24","server VLAN"],["203.0.113.0/24","internet"]];
+const FWPORTS=[[22,"SSH"],[443,"HTTPS"],[3389,"RDP"],[445,"SMB"],[53,"DNS"],[25,"SMTP"]];
+function fwInNet(ip,net){if(net==="any")return true;const [b,c]=net.split("/");const m=(0xFFFFFFFF<<(32-+c))>>>0;const n=s=>s.split(".").reduce((a,o)=>(a*256)+(+o),0);return ((n(ip)&m)>>>0)===((n(b)&m)>>>0);}
+function fwRandIp(net){const base=net.split("/")[0].split(".");base[3]=String(5+Math.floor(Math.random()*200));return base.join(".");}
+function genFw(){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const rules=[];const n=4+Math.floor(Math.random()*2);
+  for(let i=0;i<n;i++){const src=Math.random()<0.25?"any":pick(FWNETS)[0];let dst=Math.random()<0.25?"any":pick(FWNETS)[0];if(Math.random()<0.4&&dst!=="any")dst=fwRandIp(dst);const port=Math.random()<0.2?"any":String(pick(FWPORTS)[0]);rules.push({src,dst,port,act:Math.random()<0.6?"ALLOW":"DENY"});}
+  const pnet=pick(FWNETS)[0],dnet=pick(FWNETS)[0];const pkt={src:fwRandIp(pnet),dst:fwRandIp(dnet),port:String(pick(FWPORTS)[0])};
+  let match=null;for(let i=0;i<rules.length;i++){const r=rules[i];if(fwInNet(pkt.src,r.src)&&(r.dst==="any"||(r.dst.includes("/")?fwInNet(pkt.dst,r.dst):r.dst===pkt.dst))&&(r.port==="any"||r.port===pkt.port)){match=i;break;}}
+  const act=match===null?"DENY":rules[match].act;
+  return {rules,pkt,match,act,svc:(FWPORTS.find(p=>String(p[0])===pkt.port)||["","?"])[1]};}
+function fwHtml(g,prompt){return `<p class="pbqp">${esc(prompt)}</p><pre class="out"># ACTION  SOURCE            DESTINATION       PORT\n${g.rules.map((r,i)=>`${i+1} ${r.act.padEnd(6)}  ${r.src.padEnd(17)} ${r.dst.padEnd(17)} ${r.port}`).join("\n")}\n${g.rules.length+1} DENY    any               any               any   (implicit)</pre><div class="given">Packet: <b style="font-size:15px">${g.pkt.src} → ${g.pkt.dst}</b><br>TCP ${g.pkt.port} (${g.svc}). Networks: 10.0.10.0/24 users · 10.0.20.0/24 servers · 203.0.113.0/24 internet</div><p class="pbqp" style="color:var(--ink);font-weight:700">What happens to it?</p><div class="fw-act" style="display:flex;gap:9px">${["ALLOW","DENY"].map(a=>`<button class="opt" data-act="${a}" style="flex:1;text-align:center">${a}</button>`).join("")}</div><p class="pbqp" style="color:var(--ink);font-weight:700;margin-top:12px">Which rule decides it?</p><div class="fw-rule" style="display:flex;flex-wrap:wrap;gap:8px">${g.rules.map((_,i)=>`<button class="opt" data-rule="${i}" style="flex:1;min-width:44px;text-align:center">${i+1}</button>`).join("")}<button class="opt" data-rule="imp" style="flex:2;text-align:center">Implicit deny</button></div>`;}
+function fwCheck(g,act,rule){let ok=0;const notes=[];if(act===g.act)ok++;else notes.push("Action: "+(act?"you said "+act:"blank")+"; the packet is "+g.act+"ED.");const want=g.match===null?"imp":String(g.match);if(rule===want)ok++;else notes.push("Rule: "+(rule?(rule==="imp"?"you chose implicit deny":"you chose rule "+(+rule+1)):"blank")+"; "+(g.match===null?"nothing matched, so the implicit deny at the bottom applies.":"rule "+(g.match+1)+" is the first line whose source, destination and port all fit, and evaluation stops there."));
+  const trace=g.rules.map((r,i)=>{const s=fwInNet(g.pkt.src,r.src),d=r.dst==="any"||(r.dst.includes("/")?fwInNet(g.pkt.dst,r.dst):r.dst===g.pkt.dst),p=r.port==="any"||r.port===g.pkt.port;return (i+1)+": "+(s&&d&&p?"MATCH → "+r.act:"no ("+(!s?"source":!d?"destination":"port")+" doesn't fit)");});
+  return {score:ok/2*100,why:`${ok} of 2.`+(notes.length?"\n\n"+notes.join("\n"):"")+"\n\nWalk it top-down:\n"+trace.join("\n")+"\n\nFirst match wins; anything unmatched hits the implicit deny."};}
+
+function genRisk(){const av=[50000,120000,250000,400000,800000,1500000][Math.floor(Math.random()*6)];const ef=[10,20,25,40,50,75][Math.floor(Math.random()*6)];const aroPick=[["once every 10 years",0.1],["once every 5 years",0.2],["once every 4 years",0.25],["once every 2 years",0.5],["once a year",1],["twice a year",2]][Math.floor(Math.random()*6)];
+  const sle=av*ef/100,ale=sle*aroPick[1];const asset=["The customer database","The e-commerce web tier","The manufacturing PLC network","The payroll system","The file server cluster"][Math.floor(Math.random()*5)];
+  const ctrlCost=Math.round(ale*(Math.random()<0.5?0.5+Math.random()*0.4:1.1+Math.random()*0.8)/100)*100;const newEf=Math.max(5,ef-[10,15,20][Math.floor(Math.random()*3)]);const newAle=av*newEf/100*aroPick[1];const worth=(ale-newAle)>ctrlCost;
+  return {av,ef,aro:aroPick[1],aroTxt:aroPick[0],sle,ale,asset,ctrlCost,newEf,newAle,worth};}
+function riskHtml(g,prompt){return `<p class="pbqp">${esc(prompt)}</p><div class="given">${esc(g.asset)} is valued at <b style="font-size:15px">$${g.av.toLocaleString()}</b>. A ransomware event would destroy <b style="font-size:15px">${g.ef}%</b> of its value and is expected <b style="font-size:15px">${g.aroTxt}</b>.<br><br>A proposed control costs <b style="font-size:15px">$${g.ctrlCost.toLocaleString()}</b> per year and would cut the loss to ${g.newEf}% of value.</div><label class="fl">SLE, single loss expectancy ($)<input class="fi" data-k="sle" inputmode="numeric" placeholder="AV × EF"></label><label class="fl">ALE, annualized loss expectancy ($)<input class="fi" data-k="ale" inputmode="numeric" placeholder="SLE × ARO"></label><p class="pbqp" style="color:var(--ink);font-weight:700">Is the control cost-justified?</p><div class="rk-worth" style="display:flex;gap:9px">${["Yes","No"].map(a=>`<button class="opt" data-w="${a}" style="flex:1;text-align:center">${a}</button>`).join("")}</div>`;}
+function riskCheck(g,sle,ale,worth){let ok=0;const notes=[];const num=s=>parseInt(String(s||"").replace(/[^0-9]/g,""),10);
+  if(num(sle)===g.sle)ok++;else notes.push("SLE: "+(sle?"you entered "+sle:"blank")+"; AV $"+g.av.toLocaleString()+" × EF "+g.ef+"% = $"+g.sle.toLocaleString()+".");
+  if(num(ale)===Math.round(g.ale))ok++;else notes.push("ALE: "+(ale?"you entered "+ale:"blank")+"; SLE $"+g.sle.toLocaleString()+" × ARO "+g.aro+" = $"+Math.round(g.ale).toLocaleString()+".");
+  const w=worth===(g.worth?"Yes":"No");if(w)ok++;else notes.push("Cost-benefit: new ALE = $"+g.av.toLocaleString()+" × "+g.newEf+"% × "+g.aro+" = $"+Math.round(g.newAle).toLocaleString()+"; savings $"+Math.round(g.ale-g.newAle).toLocaleString()+" per year vs cost $"+g.ctrlCost.toLocaleString()+" → "+(g.worth?"justified.":"NOT justified."));
+  return {score:ok/3*100,why:`${ok} of 3.`+(notes.length?"\n\n"+notes.join("\n"):"")+"\n\nSLE = AV × EF · ALE = SLE × ARO · a control pays when (ALE before − ALE after) > annual cost."};}
+
+/* --- lab wrappers (use cur / W / #pbqbody like the other lab types) --- */
+function buildHashid(p){W={g:genHash(),alg:null};$("#pbqbody").innerHTML=hashHtml(W.g,p.prompt);document.querySelectorAll(".hx-opts .opt").forEach(b=>b.onclick=()=>{if(W.locked)return;W.alg=b.dataset.alg;document.querySelectorAll(".hx-opts .opt").forEach(x=>x.classList.toggle("sel",x.dataset.alg===W.alg));});}
+function checkHashid(){const bits=($("#pbqbody .fi[data-k=bits]")||{}).value;const r=hashCheck(W.g,W.alg,bits);document.querySelectorAll(".hx-opts .opt").forEach(b=>{if(b.dataset.alg===W.g.alg)b.classList.add("right");else if(b.dataset.alg===W.alg)b.classList.add("wrong");b.disabled=true;});document.querySelectorAll("#pbqbody .fi").forEach(i=>i.disabled=true);W.locked=true;return r;}
+function buildFwrule(p){W={g:genFw(),act:null,rule:null};$("#pbqbody").innerHTML=fwHtml(W.g,p.prompt);document.querySelectorAll(".fw-act .opt").forEach(b=>b.onclick=()=>{if(W.locked)return;W.act=b.dataset.act;document.querySelectorAll(".fw-act .opt").forEach(x=>x.classList.toggle("sel",x.dataset.act===W.act));});document.querySelectorAll(".fw-rule .opt").forEach(b=>b.onclick=()=>{if(W.locked)return;W.rule=b.dataset.rule;document.querySelectorAll(".fw-rule .opt").forEach(x=>x.classList.toggle("sel",x.dataset.rule===W.rule));});}
+function checkFwrule(){const r=fwCheck(W.g,W.act,W.rule);const want=W.g.match===null?"imp":String(W.g.match);document.querySelectorAll(".fw-act .opt").forEach(b=>{if(b.dataset.act===W.g.act)b.classList.add("right");else if(b.dataset.act===W.act)b.classList.add("wrong");b.disabled=true;});document.querySelectorAll(".fw-rule .opt").forEach(b=>{if(b.dataset.rule===want)b.classList.add("right");else if(b.dataset.rule===W.rule)b.classList.add("wrong");b.disabled=true;});W.locked=true;return r;}
+function buildRisk(p){W={g:genRisk(),worth:null};$("#pbqbody").innerHTML=riskHtml(W.g,p.prompt);document.querySelectorAll(".rk-worth .opt").forEach(b=>b.onclick=()=>{if(W.locked)return;W.worth=b.dataset.w;document.querySelectorAll(".rk-worth .opt").forEach(x=>x.classList.toggle("sel",x.dataset.w===W.worth));});}
+function checkRisk(){const v=k=>($("#pbqbody .fi[data-k="+k+"]")||{}).value;const r=riskCheck(W.g,v("sle"),v("ale"),W.worth);document.querySelectorAll(".rk-worth .opt").forEach(b=>{if(b.dataset.w===(W.g.worth?"Yes":"No"))b.classList.add("right");else if(b.dataset.w===W.worth)b.classList.add("wrong");b.disabled=true;});document.querySelectorAll("#pbqbody .fi").forEach(i=>i.disabled=true);W.locked=true;return r;}
+
+/* --- exhibit / scenario --- */
+function buildScenario(p){
+  const order=shuffle(p.opts.map((_,i)=>i));W={sel:null};
+  $("#pbqbody").innerHTML=`<p class="pbqp">${esc(p.setup)}</p>`+(p.out?`<pre class="out">${esc(p.out)}</pre>`:"")+`<p class="pbqp" style="color:var(--ink);font-weight:700">${esc(p.q)}</p><div id="sopts" style="display:flex;flex-direction:column;gap:9px">`+order.map(i=>`<button class="opt" data-i="${i}">${esc(p.opts[i])}</button>`).join("")+`</div>`;
+  document.querySelectorAll("#sopts .opt").forEach(b=>b.onclick=()=>{if(W.locked)return;W.sel=+b.dataset.i;document.querySelectorAll("#sopts .opt").forEach(x=>x.classList.toggle("sel",+x.dataset.i===W.sel));});
+}
+function checkScenario(){
+  const right=W.sel===0;
+  document.querySelectorAll("#sopts .opt").forEach(b=>{const i=+b.dataset.i;if(i===0)b.classList.add("right");else if(i===W.sel)b.classList.add("wrong");b.disabled=true;});
+  W.locked=true;
+  let why=(right?"Correct. ":"Not quite. ")+esc(cur.why);
+  if(!right&&W.sel!==null&&cur.no&&cur.no[W.sel-1])why="You picked: "+esc(cur.opts[W.sel])+"\n"+esc(cur.no[W.sel-1])+"\n\n"+why;
+  else if(!right&&W.sel===null)why="You didn't pick an answer.\n\n"+why;
+  return {score:right?100:0,why};
+}
+/* --- submit / feedback --- */
+function checkPbq(){
+  if(W.locked)return;
+  const res=({match:checkMatch,order:checkOrder,hashid:checkHashid,fwrule:checkFwrule,risk:checkRisk,scenario:checkScenario})[cur.type]();
+  const pct=Math.round(res.score);
+  const s=pbq[cur.id]||(pbq[cur.id]={attempts:0,best:0});
+  s.attempts++;s.best=Math.max(s.best,pct);
+  bumpDay(1);
+  saveState();
+  $("#pbqsubmit").style.display="none";
+  const fb=$("#pbqfb");fb.style.display="block";
+  fb.innerHTML=`<div class="fbscore" style="color:${pct>=80?"var(--green)":pct>=50?"var(--amber)":"var(--red)"}">${pct}%</div><div class="fbwhy">${res.why}</div><div class="fbbtns"><button id="fbagain">${(cur.type==="hashid"||cur.type==="fwrule"||cur.type==="risk")?"New problem":"Try again"}</button><button id="fbnext">Next PBQ</button></div>`;
+  $("#fbagain").onclick=()=>startPbq(cur.id);
+  $("#fbnext").onclick=()=>startPbq(PBQS[(curIdx+1)%PBQS.length].id);
+  fb.scrollIntoView({behavior:"smooth",block:"end"});
+}
+$("#pbqsubmit").onclick=checkPbq;
+$("#labback").onclick=()=>renderHome();
+$("#pbqback").onclick=()=>renderLab();
+
+const DOMNAME={1:"General Concepts",2:"Threats & Vulns",3:"Architecture",4:"Operations",5:"Program Mgmt"};
+/* EXQ loaded from data/exq.js */
+let xq={queue:[],i:0,right:0,locked:false};
+function exqStat(q){return exq[q.id]||(exq[q.id]={seen:0,right:0,last:1});}
+function xqSummary(){
+  const seen=EXQ.filter(q=>exq[q.id]).length;
+  const tot=EXQ.reduce((a,q)=>a+((exq[q.id]||{}).seen||0),0),r=EXQ.reduce((a,q)=>a+((exq[q.id]||{}).right||0),0);
+  return `Scenario MC · ${seen}/${EXQ.length} seen`+(tot?` · ${Math.round(r/tot*100)}% right`:"");
+}
+function exqPick(n){
+  const unseen=shuffle(EXQ.filter(q=>!exq[q.id]));
+  const missed=shuffle(EXQ.filter(q=>exq[q.id]&&exq[q.id].last===0));
+  const rest=shuffle(EXQ.filter(q=>exq[q.id]&&exq[q.id].last!==0));
+  return unseen.concat(missed,rest).slice(0,n);
+}
+function renderExq(){
+  show("exq");
+  const tot=EXQ.reduce((a,q)=>a+((exq[q.id]||{}).seen||0),0),r=EXQ.reduce((a,q)=>a+((exq[q.id]||{}).right||0),0);
+  const seen=EXQ.filter(q=>exq[q.id]).length;
+  const missedN=EXQ.filter(q=>exq[q.id]&&exq[q.id].last===0).length;
+  const dom=[1,2,3,4,5].map(d=>{const qs=EXQ.filter(q=>q.d===d);const s=qs.reduce((a,q)=>a+((exq[q.id]||{}).seen||0),0),rr=qs.reduce((a,q)=>a+((exq[q.id]||{}).right||0),0);return `<div class="pairrow">${DOMNAME[d]}<span>${s?Math.round(rr/s*100)+"% · ":""}${qs.length} Qs</span></div>`;}).join("");
+  $("#exqbody").innerHTML=`<p class="lead">Facts are the cards' job. This is the exam's job: a scenario, four plausible answers, and words like MOST likely and BEST. ${EXQ.length} questions weighted like the real blueprint. ${seen}/${EXQ.length} seen${tot?`, ${Math.round(r/tot*100)}% right over ${tot} answers`:""}.</p><button class="bigbtn" id="xqstart">Start a set of 15</button>${missedN?`<button class="ghost" id="xqmiss" style="width:100%;margin-bottom:10px">Retry the ${missedN} you missed last time</button>`:""}<div class="reft">Accuracy by domain</div>${dom}`;
+  $("#xqstart").onclick=()=>startExq(15);
+  if(missedN)$("#xqmiss").onclick=()=>startExq(0,shuffle(EXQ.filter(q=>exq[q.id]&&exq[q.id].last===0)));
+}
+function startExq(n,pool){
+  show("exq");
+  xq={queue:pool||exqPick(n),i:0,right:0,locked:false};
+  xqQuestion();
+}
+function xqQuestion(){
+  if(xq.i>=xq.queue.length)return xqDone();
+  const q=xq.queue[xq.i];xq.locked=false;
+  const order=shuffle([0,1,2,3]);
+  $("#exqbody").innerHTML=`<div class="spscore">${xq.i+1} / ${xq.queue.length} · ${xq.right} right</div><div class="xdom">${DOMNAME[q.d]}</div><div class="xq">${esc(q.q)}</div><div id="xopts" style="display:flex;flex-direction:column;gap:9px">${order.map(i=>`<button class="opt" data-i="${i}">${esc(q.o[i])}</button>`).join("")}</div><div id="xnote"></div>`;
+  document.querySelectorAll("#xopts .opt").forEach(b=>b.onclick=()=>xqAnswer(+b.dataset.i));
+}
+function xqAnswer(i){
+  if(xq.locked)return;xq.locked=true;
+  const q=xq.queue[xq.i];const right=i===0;
+  const s=exqStat(q);s.seen++;if(right){s.right++;xq.right++;}s.last=right?1:0;
+  document.querySelectorAll("#xopts .opt").forEach(b=>{const k=+b.dataset.i;if(k===0)b.classList.add("right");else if(k===i)b.classList.add("wrong");b.disabled=true;});
+  $("#xnote").innerHTML=`<div class="xnote">${right?"<b>Correct.</b> ":`<div class="xpick"><b>You picked:</b> ${esc(q.o[i])}\n${esc(q.n[i-1]||"")}</div><b>Why ${esc(q.o[0])}:</b> `}${esc(q.w)}</div><button class="twnext" id="xnext">${xq.i+1>=xq.queue.length?"Finish":"Next"}</button>`;
+  $("#xnext").onclick=()=>{xq.i++;xqQuestion();};
+  bumpDay(1);saveState();
+}
+function xqDone(){
+  const n=xq.queue.length,pct=n?Math.round(xq.right/n*100):0;
+  $("#exqbody").innerHTML=`<div class="fbscore" style="text-align:center;color:${pct>=80?"var(--green)":pct>=60?"var(--amber)":"var(--red)"}">${pct}%</div><p class="lead" style="text-align:center">${xq.right} of ${n}. ${pct>=80?"That's exam-ready pace on this set.":"Misses are on your Miss list with the full reasoning."}</p><button class="bigbtn" id="xqagain">Another set of 15</button><button class="ghost" id="xqhome" style="width:100%">Back</button>`;
+  $("#xqagain").onclick=()=>startExq(15);$("#xqhome").onclick=renderExq;
+}
+$("#xqback").onclick=()=>renderHome();
+
+/* ================= MISS LIST ================= */
+function renderMiss(){
+  show("miss");
+  const rows=CARDS.map(cd=>{const s=stats[cd.sid];if(!s)return null;const m=s.seen-s.right;return m>0?{cd,m,seen:s.seen,ok:mastered(cd)}:null;}).filter(Boolean).sort((a,b)=>(b.m-a.m)||(a.ok-b.ok)||(b.seen-a.seen));
+  const xrows=EXQ.map(q=>{const s=exq[q.id];if(!s)return null;const m=s.seen-s.right;return m>0?{q,m,seen:s.seen,last:s.last}:null;}).filter(Boolean).sort((a,b)=>(b.m-a.m)||(a.last-b.last));
+  let html=`<p class="lead">Everything you've ever missed, worst first. Re-read it once a day; tap a row for the full reasoning.</p>`;
+  if(!rows.length&&!xrows.length)html+=`<p class="lead">Nothing missed yet. Run a set and this list fills itself.</p>`;
+  if(rows.length){
+    html+=`<button class="bigbtn" id="missdrill">Drill the ${Math.min(20,rows.length)} worst cards</button><div class="reft">Cards · ${rows.length}</div>`;
+    html+=rows.map(r=>{const cd=r.cd;const lines=cd.a.split("\n").filter(l=>!l.startsWith("#"));return `<div class="mrow"><div class="mrh"><span class="mcat" style="color:${CATS[cd.c].color}">${esc(CATS[cd.c].name)}</span><span class="mrn">${r.m}× missed · ${r.seen} seen${r.ok?" · mastered now":""}</span></div><div class="mrq">${esc(cd.q)}</div><div class="mra">${esc(cd.short)}</div><div class="mrx">${cd.vq?`<div class="qwrap">${DIAG[cd.vq]}</div>`:""}${lines.length?esc(lines.join("\n"))+"\n\n":""}${cd.w?"Hook: "+esc(cd.w)+"\n\n":""}${esc(cd.x||"")}</div></div>`;}).join("");
+  }
+  if(xrows.length){
+    html+=`<div class="reft">Exam questions · ${xrows.length}</div>`;
+    html+=xrows.map(r=>{const q=r.q;return `<div class="mrow"><div class="mrh"><span class="mcat" style="color:var(--amber)">${DOMNAME[q.d]}</span><span class="mrn">${r.m}× missed · ${r.seen} seen${r.last?" · got it last time":""}</span></div><div class="mrq">${esc(q.q)}</div><div class="mra">${esc(q.o[0])}</div><div class="mrx">${esc(q.w)}\n\nWhy the others are wrong:\n${q.n.map((t,i)=>"• "+esc(q.o[i+1])+" — "+esc(t)).join("\n")}</div></div>`;}).join("");
+  }
+  $("#msbody").innerHTML=html;
+  document.querySelectorAll("#msbody .mrow").forEach(el=>el.onclick=()=>el.classList.toggle("open"));
+  const d=$("#missdrill");if(d)d.onclick=()=>startTodaySet(rows.slice(0,20).map(r=>r.cd));
+}
+$("#msback").onclick=()=>renderHome();
+
+/* ================= TODAY / COACH ================= */
+function show(id){["home","session","done","lab","pbq","twins","sprint","ref","exq","miss","exam"].forEach(s=>{$("#"+s).style.display=(s===id)?(s==="home"?"block":"flex"):"none";});}
+function dkey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function bumpDay(n){const k=dkey(new Date());days[k]=(days[k]||0)+(n||1);lastStudy=Date.now();}
+function streakDays(){let n=0;const d=new Date();d.setHours(0,0,0,0);if(!days[dkey(d)])d.setDate(d.getDate()-1);while(days[dkey(d)]){n++;d.setDate(d.getDate()-1);}return n;}
+function daysToExam(){const t=new Date();t.setHours(0,0,0,0);const e=new Date(exam+"T00:00:00");return Math.round((e-t)/86400000);}
+function projection(){
+  const rows=[];let total=0;
+  SECTIONS.forEach(s=>{const w=parseInt(s.h.match(/\((\d+)%\)/)[1]);const pool=CARDS.filter(c=>s.decks.includes(c.c));const m=pool.filter(mastered).length;const f=pool.length?m/pool.length:0;total+=f*w;rows.push({name:s.h.replace(/^Domain \d: /,"").replace(/ \(\d+%\)/,""),pct:Math.round(f*100)});});
+  return {rows,total:Math.round(total)};
+}
+function todaySet(){
+  const due=shuffle(CARDS.filter(isDue)).slice(0,12);
+  const weak=shuffle(CARDS.filter(isWeak)).slice(0,Math.max(0,20-due.length));
+  let set=due.concat(weak);
+  if(set.length<20)set=set.concat(shuffle(CARDS.filter(c=>!set.includes(c))).slice(0,20-set.length));
+  return shuffle(set);
+}
+function todayPbqs(){
+  const dayN=Math.floor(Date.now()/86400000);
+  const gen=PBQS.filter(p=>p.type==="hashid"||p.type==="fwrule"||p.type==="risk");
+  const g=gen[dayN%gen.length];
+  const statics=PBQS.filter(p=>p.type==="match"||p.type==="order"||p.type==="scenario");
+  const weakPb=statics.filter(p=>!(pbq[p.id]&&pbq[p.id].best>=80));
+  const pool=weakPb.length?weakPb:statics;
+  return [g,pool[dayN%pool.length]];
+}
+function renderToday(){
+  const due=CARDS.filter(isDue).length;
+  const dte=daysToExam(),pr=projection(),st=streakDays(),set=todaySet(),pb=todayPbqs();
+  const idleH=lastStudy?Math.floor((Date.now()-lastStudy)/3600000):null;
+  const idleLine=(remind.on&&idleH!==null&&idleH>=remind.hours)?`<div class="idle">${idleH} hours since your last card. Today's set is waiting.</div>`:"";
+  const cdTxt=dte>0?`${dte} day${dte===1?"":"s"}<span>to exam</span>`:dte===0?"Exam day":"Exam date passed<span>tap to set</span>";
+  $("#today").innerHTML=`<div class="tdrow"><div class="cd" id="examcd">${cdTxt}</div><div class="st">${st?`<b>${st}</b>-day streak`:"start a streak today"}</div></div>
+  ${idleLine}<div class="proj">${pr.rows.map(r=>`<div class="pd">${r.name} ${r.pct}%<div class="bar"><i style="width:${r.pct}%"></i></div></div>`).join("")}<div class="pd total">Projected from card mastery: ${pr.total}%<div class="bar"><i style="width:${pr.total}%"></i></div></div></div>
+  <button id="startToday">Start today's set: ${set.length} cards${due?` (${Math.min(due,12)} due for review)`:""}</button>
+  <div class="tdp">${pb.map(p=>`<button data-pbq="${p.id}">${esc(p.title)}<small>Today's PBQ · ${TYPENAME[p.type]}</small></button>`).join("")}<button data-xq="1">10 exam-style questions<small>${xqSummary()}</small></button></div>`;
+  $("#today [data-xq]").onclick=()=>startExq(10);
+  $("#examcd").onclick=()=>{const v=prompt("Exam date (YYYY-MM-DD)",exam);if(v&&/^\d{4}-\d{2}-\d{2}$/.test(v.trim())){exam=v.trim();saveState();renderHome();}};
+  $("#startToday").onclick=()=>startTodaySet(set);
+  document.querySelectorAll(".tdp button[data-pbq]").forEach(b=>b.onclick=()=>{$("#home").style.display="none";startPbq(b.dataset.pbq);});
+}
+function startTodaySet(set){
+  lastDeck="today";
+  queue=set.map(cd=>({cd,recycled:false}));
+  idx=0;total=queue.length;missedThis=[];rightThis=0;
+  show("session");
+  showCard();
+}
+/* ================= REFERENCE SHEET ================= */
+const PORTCARDS=()=>CARDS.filter(c=>c.c==="ports"&&/^\d/.test(c.short));
+function renderRef(){
+  show("ref");
+  const T=(rows,h)=>`<table class="rf">${h?`<tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr>`:""}${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")}</table>`;
+  const ports=PORTCARDS().map(c=>[esc(c.short),esc(c.q),esc(c.a.split("\n").filter(l=>!l.startsWith("#"))[0]||"")]);
+  $("#rfbody").innerHTML=`<p class="lead">The last-five-minutes skim. Nothing here you have not already seen on a card.</p>
+  <div class="reft">Secure ports</div>${T(ports,["Port","Protocol","Notes"])}
+  <div class="reft">Control matrix</div>${T([["Categories","Technical · Managerial · Operational · Physical"],["Types","Preventive · Deterrent · Detective · Corrective · Compensating · Directive"],["Rule","Every control is one category AND one type"]],null)}
+  <div class="reft">Risk math</div>${T([["SLE","Asset value × Exposure factor"],["ALE","SLE × ARO (events per year)"],["Control worth it","(ALE before − ALE after) > annual cost"],["Strategies","Transfer (insure) · Accept (exception/exemption) · Avoid · Mitigate"],["Appetite","Expansionary · Neutral · Conservative"]],null)}
+  <div class="reft">Hash ladder</div>${T([["MD5","128 bit","32 hex"],["SHA-1","160 bit","40 hex"],["SHA-256","256 bit","64 hex"],["SHA-512","512 bit","128 hex"]],["Algorithm","Digest","Length"])}
+  <div class="reft">Crypto quick hits</div>${T([["Symmetric","One shared key, fast, bulk data: AES"],["Asymmetric","Key pair, slow, key exchange + signatures: RSA, ECC"],["Sign","Hash, then encrypt hash with sender's PRIVATE key"],["Verify","Decrypt with sender's PUBLIC key, compare hashes"],["Encrypt to someone","Use THEIR public key"],["Salt","Random per-password value, defeats rainbow tables"],["Key stretching","PBKDF2, bcrypt, scrypt: slow the hash on purpose"],["Revocation","CRL = list, OCSP = live query, stapling = server-supplied OCSP"],["TPM vs HSM","On-board chip vs dedicated appliance for keys"]],null)}
+  <div class="reft">Incident response (in order)</div>${T([["1 Preparation","5 Eradication"],["2 Detection","6 Recovery"],["3 Analysis","7 Lessons learned"],["4 Containment","'What NEXT?' after confirming = contain"]],null)}
+  <div class="reft">Forensics: order of volatility</div>${T([["1","CPU cache, registers"],["2","RAM, routing/ARP tables, running processes"],["3","Temp files, swap"],["4","Disk"],["5","Remote logs, backups, archives"],["Always","Legal hold → preserve → chain of custody → acquire → report"]],null)}
+  <div class="reft">Resilience</div>${T([["RTO","Max downtime"],["RPO","Max data loss → backup frequency"],["MTTR / MTBF","Time to repair / time between failures"],["Hot / warm / cold","Minutes / hours-days / days-weeks"],["Full / incr / diff","Everything / since last ANY / since last FULL"],["Tests","Tabletop → simulation → parallel → failover"]],null)}
+  <div class="reft">Identity</div>${T([["SAML","XML SSO, IdP → SP assertion (enterprise web SSO)"],["OAuth 2.0","Delegated AUTHORIZATION (tokens), not identity"],["OIDC","Identity layer on OAuth (ID token)"],["LDAP / LDAPS","Directory lookup 389 / 636"],["Kerberos","Tickets, port 88, time-sensitive"],["RADIUS","UDP 1812/1813, password-only encryption, network access"],["TACACS+","TCP 49, whole packet encrypted, device admin"],["802.1X","Supplicant → Authenticator → Auth server (EAP)"],["Access models","MAC (labels) · DAC (owner) · RBAC (role) · ABAC (attributes) · rule-based"],["PAM","JIT access · vaulting · ephemeral credentials"]],null)}
+  <div class="reft">Email authentication</div>${T([["SPF","DNS TXT: which IPs may send for the domain"],["DKIM","Signature in header, public key in DNS"],["DMARC","Policy on SPF/DKIM alignment: none / quarantine / reject"]],null)}
+  <div class="reft">Attack → mitigation</div>${T([["ARP poisoning","Dynamic ARP inspection"],["Rogue DHCP","DHCP snooping"],["VLAN hopping","Change native VLAN, no auto-trunk"],["SQLi / XSS","Input validation, parameterized queries, output encoding"],["Buffer overflow","Bounds checking, ASLR/DEP, patching"],["Password spraying","MFA, lockout, monitoring"],["Downgrade","Disable weak protocols/ciphers"],["Rogue AP / evil twin","WIPS, 802.1X with cert validation"],["Deauth","802.11w protected management frames"],["Ransomware","Offline backups, EDR, least privilege, segmentation"]],null)}
+  <div class="reft">Zero trust vocabulary</div>${T([["Control plane","Policy engine · Policy administrator · Adaptive identity · Threat scope reduction · Policy-driven access"],["Data plane","Subject/system · Policy enforcement point · Implicit trust zones"]],null)}
+  <div class="reft">Governance and third party</div>${T([["Policy → Standard → Procedure → Guideline","Why/what → measurable rule → how-to steps → recommendation"],["SLA","Measurable service levels"],["MOU / MOA","Intent, usually non-binding"],["MSA","Master terms; SOW / WO = specific work"],["NDA","Confidentiality"],["BPA","Partnership terms"],["Owner / controller / processor / custodian","Accountable / decides why+how / handles on behalf / day-to-day care"],["Pen test envs","Known (white) · Partially known (gray) · Unknown (black)"],["CVSS","0.1-3.9 Low · 4-6.9 Medium · 7-8.9 High · 9-10 Critical"]],null)}`;
+}
+$("#twback").onclick=()=>renderHome();$("#spback").onclick=()=>renderHome();$("#rfback").onclick=()=>renderHome();
+
+/* ================= CONFUSABLE TWINS ================= */
+/* TWINS loaded from data/twins.js */
+let tw={queue:[],i:0,right:0,locked:false};
+function renderTwins(){
+  show("twins");
+  const rows=TWINS.map(p=>({p,st:twins[p.a+"|"+p.b]||{seen:0,right:0}}));
+  const seen=rows.reduce((a,r)=>a+r.st.seen,0),right=rows.reduce((a,r)=>a+r.st.right,0);
+  const worst=rows.filter(r=>r.st.seen>=2).sort((x,y)=>(x.st.right/x.st.seen)-(y.st.right/y.st.seen)).slice(0,6);
+  $("#twbody").innerHTML=`<p class="lead">The exam's wrong answers are near-twins. Read the statement, tap the term it describes. ${TWINS.length} pairs.${seen?` You're at ${Math.round(right/seen*100)}% over ${seen} statements.`:""}</p><button class="bigbtn" id="twstart">Start a set of 20</button>${worst.length?`<div class="reft">Pairs you miss most</div>`+worst.map(r=>`<div class="pairrow">${esc(r.p.a)} vs ${esc(r.p.b)}<span>${r.st.right}/${r.st.seen}</span></div>`).join(""):""}`;
+  $("#twstart").onclick=startTwins;
+}
+function startTwins(){
+  const items=[];TWINS.forEach(p=>p.s.forEach(st=>items.push({p,st})));
+  tw={queue:shuffle(items).slice(0,20),i:0,right:0,locked:false};
+  twQuestion();
+}
+function twQuestion(){
+  if(tw.i>=tw.queue.length)return twDone();
+  const {p,st}=tw.queue[tw.i];tw.locked=false;
+  $("#twbody").innerHTML=`<div class="spscore">${tw.i+1} / ${tw.queue.length} · ${tw.right} right</div><div class="twq">${esc(st[0])}</div><div class="twbtns"><button data-k="a">${esc(p.a)}</button><button data-k="b">${esc(p.b)}</button></div><div class="twnote" id="twnote"></div>`;
+  document.querySelectorAll(".twbtns button").forEach(b=>b.onclick=()=>twAnswer(b,b.dataset.k===st[1]));
+}
+function twAnswer(btn,right){
+  if(tw.locked)return;tw.locked=true;
+  const {p,st}=tw.queue[tw.i];const key=p.a+"|"+p.b;
+  const t=twins[key]||(twins[key]={seen:0,right:0});t.seen++;if(right){t.right++;tw.right++;}
+  document.querySelectorAll(".twbtns button").forEach(b=>{if(b.dataset.k===st[1])b.classList.add("right");else if(b===btn)b.classList.add("wrong");b.disabled=true;});
+  $("#twnote").innerHTML=(right?"<b>Right.</b> ":"<b>Not quite.</b> ")+esc(p.n)+(right?"":`<button class="twnext" id="twnext">Next</button>`);
+  if(right)setTimeout(()=>{tw.i++;twQuestion();},1100);
+  else $("#twnext").onclick=()=>{tw.i++;twQuestion();};
+  bumpDay(1);saveState();
+}
+function twDone(){
+  const pct=Math.round(tw.right/tw.queue.length*100);
+  $("#twbody").innerHTML=`<div class="fbscore" style="text-align:center;color:${pct>=80?"var(--green)":pct>=60?"var(--amber)":"var(--red)"}">${pct}%</div><p class="lead" style="text-align:center">${tw.right} of ${tw.queue.length}. Misses feed the list on the Twins screen.</p><button class="bigbtn" id="twagain">Another 20</button><button class="ghost" id="twhome" style="width:100%">Back to Twins</button>`;
+  $("#twagain").onclick=startTwins;$("#twhome").onclick=renderTwins;
+}
+/* ================= SPEED ROUNDS ================= */
+/* ================= SPEED ROUNDS ================= */
+const ACRONYMS=[["AAA","Authentication, authorization, accounting"],["ABAC","Attribute-based access control"],["ACL","Access control list"],["AES","Advanced Encryption Standard"],["ALE","Annualized loss expectancy"],["ARO","Annualized rate of occurrence"],["AUP","Acceptable use policy"],["BCP","Business continuity plan"],["BEC","Business email compromise"],["BIA","Business impact analysis"],["BPA","Business partnership agreement"],["BYOD","Bring your own device"],["CA","Certificate authority"],["CASB","Cloud access security broker"],["COPE","Corporate-owned, personally enabled"],["CRL","Certificate revocation list"],["CSR","Certificate signing request"],["CSRF","Cross-site request forgery"],["CVE","Common Vulnerabilities and Exposures"],["CVSS","Common Vulnerability Scoring System"],["CYOD","Choose your own device"],["DAC","Discretionary access control"],["DKIM","DomainKeys Identified Mail"],["DLP","Data loss prevention"],["DMARC","Domain-based Message Authentication, Reporting and Conformance"],["DoS","Denial of service"],["EAP","Extensible Authentication Protocol"],["EDR","Endpoint detection and response"],["EF","Exposure factor"],["FIM","File integrity monitoring"],["GDPR","General Data Protection Regulation"],["HSM","Hardware security module"],["IaC","Infrastructure as code"],["ICS","Industrial control system"],["IdP","Identity provider"],["IoC","Indicator of compromise"],["IPS","Intrusion prevention system"],["IR","Incident response"],["ISAC","Information Sharing and Analysis Center"],["JIT","Just-in-time (access)"],["MAC","Mandatory access control"],["MDM","Mobile device management"],["MFA","Multifactor authentication"],["MOU","Memorandum of understanding"],["MSA","Master service agreement"],["MTBF","Mean time between failures"],["MTTR","Mean time to repair"],["NAC","Network access control"],["NDA","Non-disclosure agreement"],["NGFW","Next-generation firewall"],["OCSP","Online Certificate Status Protocol"],["OIDC","OpenID Connect"],["OSINT","Open-source intelligence"],["PAM","Privileged access management"],["PEP","Policy enforcement point"],["PKI","Public key infrastructure"],["RBAC","Role-based access control"],["RPO","Recovery point objective"],["RTO","Recovery time objective"],["RTOS","Real-time operating system"],["SAML","Security Assertion Markup Language"],["SASE","Secure access service edge"],["SBOM","Software bill of materials"],["SCADA","Supervisory control and data acquisition"],["SCAP","Security Content Automation Protocol"],["SIEM","Security information and event management"],["SLA","Service-level agreement"],["SLE","Single loss expectancy"],["SOAR","Security orchestration, automation and response"],["SOW","Statement of work"],["SPF","Sender Policy Framework"],["SSO","Single sign-on"],["TOC/TOU","Time-of-check to time-of-use"],["TPM","Trusted Platform Module"],["UTM","Unified threat management"],["WAF","Web application firewall"],["WPA3","Wi-Fi Protected Access 3"],["XDR","Extended detection and response"],["XSS","Cross-site scripting"]];
+let sp={kind:"",t:0,timer:null,score:0,n:0,locked:false};
+function renderSprint(){
+  show("sprint");
+  if(sp.timer){clearInterval(sp.timer);sp.timer=null;}
+  const bp=sprint.ports||{},ba=sprint.acro||{},br=sprint.risk||{};
+  $("#spbody").innerHTML=`<p class="lead">90 seconds. Tap as fast as you can; a miss costs nothing but time. When these are automatic, the scenario questions stop eating your clock.</p>
+  <button class="bigbtn" id="spPorts">Ports sprint<small style="display:block;font-size:12px;font-weight:700;opacity:.8">best ${bp.best||0} · ${bp.runs||0} runs</small></button>
+  <button class="bigbtn" id="spAcro" style="background:var(--amber)">Acronym sprint<small style="display:block;font-size:12px;font-weight:700;opacity:.8">best ${ba.best||0} · ${ba.runs||0} runs</small></button>
+  <button class="bigbtn" id="spRisk" style="background:var(--panel-2);color:var(--ink)">Risk-math sprint<small style="display:block;font-size:12px;font-weight:700;opacity:.8">best ${br.best||0} · ${br.runs||0} runs</small></button>`;
+  $("#spPorts").onclick=()=>startSprint("ports");$("#spAcro").onclick=()=>startSprint("acro");$("#spRisk").onclick=()=>startSprint("risk");
+}
+function startSprint(kind){
+  sp={kind,t:90,timer:null,score:0,n:0,locked:false};
+  sp.timer=setInterval(()=>{sp.t--;const el=$("#sptimer");if(el){el.textContent=sp.t+"s";el.classList.toggle("low",sp.t<=10);}if(sp.t<=0)endSprint();},1000);
+  spQuestion();
+}
+function portQ(){
+  const cards=PORTCARDS();const c=cards[Math.floor(Math.random()*cards.length)];
+  const pool=shuffle([...new Set(cards.filter(x=>x.short!==c.short).map(x=>x.short))]);
+  return {q:c.q,ans:c.short,opts:shuffle([c.short,...pool.slice(0,3)])};
+}
+function acroQ(){
+  const a=ACRONYMS[Math.floor(Math.random()*ACRONYMS.length)];
+  const pool=shuffle(ACRONYMS.filter(x=>x[0]!==a[0]).map(x=>x[1]));
+  return {q:a[0],ans:a[1],opts:shuffle([a[1],...pool.slice(0,3)])};
+}
+function riskQ(){
+  const g=genRisk();const kind=["sle","ale","aro"][Math.floor(Math.random()*3)];const $$=n=>"$"+Math.round(n).toLocaleString();let q,ans,ds;
+  if(kind==="sle"){q=`AV ${$$(g.av)}, EF ${g.ef}%. SLE?`;ans=$$(g.sle);ds=[$$(g.sle*2),$$(g.av-g.sle),$$(g.sle/2),$$(g.av)];}
+  else if(kind==="ale"){q=`SLE ${$$(g.sle)}, ${g.aroTxt}. ALE?`;ans=$$(g.ale);ds=[$$(g.sle),$$(g.ale*2),$$(g.sle*(g.aro>=1?g.aro+1:1/g.aro)),$$(g.ale/2)];}
+  else{q=`Expected ${g.aroTxt}. ARO?`;ans=String(g.aro);ds=[String(1/g.aro),String(g.aro*2),String(g.aro/2),"1"];}
+  const uniq=[...new Set(ds.filter(d=>d!==ans))].slice(0,3);
+  return {q,ans,opts:shuffle([ans,...uniq])};
+}
+function spQuestion(){
+  sp.locked=false;
+  const q=sp.kind==="ports"?portQ():sp.kind==="acro"?acroQ():riskQ();
+  $("#spbody").innerHTML=`<div class="sptimer${sp.t<=10?" low":""}" id="sptimer">${sp.t}s</div><div class="spscore">${sp.score} right · ${sp.n} answered</div><div class="spq">${esc(q.q)}</div><div class="spopts${sp.kind==="acro"?" wide":""}">${q.opts.map(o=>`<button>${esc(o)}</button>`).join("")}</div>`;
+  document.querySelectorAll(".spopts button").forEach(b=>b.onclick=()=>{
+    if(sp.locked||!sp.timer)return;sp.locked=true;sp.n++;
+    const ok=b.textContent===q.ans;
+    if(ok){sp.score++;b.classList.add("right");}
+    else{
+      b.classList.add("wrong");document.querySelectorAll(".spopts button").forEach(x=>{if(x.textContent===q.ans)x.classList.add("right");});
+      if(sp.kind==="ports"){const pk=PORTCARDS().find(x=>x.short===b.textContent);if(pk){const c=document.createElement("div");c.className="spscore";c.style.marginTop="10px";c.textContent=b.textContent+" is "+pk.q;$("#spbody").appendChild(c);}}
+    }
+    setTimeout(()=>{if(sp.timer)spQuestion();},ok?250:1300);
+  });
+}
+function endSprint(){
+  clearInterval(sp.timer);sp.timer=null;
+  const s=sprint[sp.kind]||(sprint[sp.kind]={best:0,runs:0});s.runs++;const isBest=sp.score>s.best;s.best=Math.max(s.best,sp.score);
+  bumpDay(sp.n);saveState();
+  $("#spbody").innerHTML=`<div class="fbscore" style="text-align:center;color:var(--green)">${sp.score}</div><p class="lead" style="text-align:center">right in 90 seconds, ${sp.n} answered${isBest?". New best!":". Best: "+s.best+"."}</p><button class="bigbtn" id="spagain">Run it again</button><button class="ghost" id="spmenu" style="width:100%">Back to speed rounds</button>`;
+  $("#spagain").onclick=()=>startSprint(sp.kind);$("#spmenu").onclick=renderSprint;
+}
+
+/* ================= STUDY NUDGES ================= */
+function renderNudge(){
+  const el=$("#nudge");if(!el)return;
+  const url=(owner&&gistId)?`https://gist.githubusercontent.com/${owner}/${gistId}/raw/${GFILE}`:"";
+  el.innerHTML=`<div class="nudgerow"><span>Nudge if idle</span><div class="hopts">${[2,4,6,8].map(h=>`<button data-h="${h}" class="${remind.hours===h?"sel":""}">${h}h</button>`).join("")}</div><button class="tog ${remind.on?"on":""}" id="nudgetog">${remind.on?"On":"Off"}</button>${url?`<div class="nudgeurl"><span>Shortcut URL for your phone's automation</span><button id="copyurl">Copy</button></div>`:`<div class="nudgeurl"><span>Link GitHub, then set up the phone automation (see guide).</span></div>`}</div>`;
+  el.querySelectorAll(".hopts button").forEach(b=>b.onclick=()=>{remind.hours=+b.dataset.h;saveState();renderNudge();renderToday();});
+  $("#nudgetog").onclick=()=>{remind.on=!remind.on;saveState();renderNudge();renderToday();};
+  const c=$("#copyurl");if(c)c.onclick=async()=>{try{await navigator.clipboard.writeText(url);toast("URL copied");}catch(e){prompt("Copy this URL",url);}};
+}
+
+/* ================= GITHUB LINK ================= */
+function linkStatus(msg){const el=$("#linkmsg");if(el)el.textContent=msg;}
+$("#linkbtn").onclick=async()=>{
+  const t=$("#tok").value.trim();
+  if(!t){linkStatus("Paste the token first.");return;}
+  token=t;
+  try{localStorage.setItem(TOKKEY,token);}catch(e){}
+  $("#tok").value="";
+  linkStatus("Linking…");
+  await loadState();
+  if(document.querySelector("#sync").className!=="ok"){
+    token="";try{localStorage.removeItem(TOKKEY);}catch(e){}
+    setSync("unlinked");
+    renderHome();
+    linkStatus("GitHub rejected that token or there's no connection. Check it has Gists read & write and try again.");
+  }
+};
+$("#unlinkbtn").onclick=()=>{
+  if(!confirm("Unlink GitHub on this device? Progress stays in your Gist and on this device."))return;
+  token="";gistId="";
+  try{localStorage.removeItem(TOKKEY);localStorage.removeItem(GIDKEY);}catch(e){}
+  setSync("unlinked");renderHome();
+};
+
+loadState();
+</script>
+<script src="bank-a.js"></script>
+<script src="bank-b.js"></script>
+<script src="bank-c.js"></script>
+<script src="pbqs.js"></script>
+<script src="engine.js"></script>
+</body>
+</html>
