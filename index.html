@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Sec+ Cards">
-<meta name="theme-color" content="#0D141F">
+<meta name="theme-color" content="#0B1220">
 <link rel="stylesheet" href="exam.css">
 <style>
   :root{
@@ -62,6 +62,14 @@
   .deck .n{margin-left:auto;font-size:13px;font-weight:700;color:var(--muted);flex:none;padding-left:8px}
   .deck.special{background:linear-gradient(135deg,#232f1f,#16202E)}
   .deck.special .t{color:var(--green)}
+  #backup{margin-top:22px;background:var(--panel);border:1px solid #2A394C;border-radius:14px;padding:14px 16px}
+  #backup .bk-t{font-weight:700;font-size:14px;margin-bottom:4px}
+  #backup .bk-s{color:var(--muted);font-size:12.5px;line-height:1.45;margin-bottom:10px}
+  #backup .bk-row{display:flex;gap:8px;flex-wrap:wrap}
+  #backup button{font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:10px;border:1px solid #2A394C;background:var(--panel-2);color:var(--ink);cursor:pointer}
+  #backup button.primary{background:var(--green);border-color:var(--green);color:#0B1220}
+  #backup #bkmsg{font-size:12.5px;color:var(--muted);margin-top:8px;min-height:1em}
+  #bkfile{display:none}
   #resetline{margin-top:18px;text-align:center}
   #resetline button{background:none;border:none;color:var(--muted);font-size:12.5px;text-decoration:underline;cursor:pointer;font-family:inherit}
 
@@ -141,6 +149,17 @@
   .pd .bar{height:5px;background:#0D141F;border-radius:3px;margin-top:3px;overflow:hidden}
   .pd .bar i{display:block;height:100%;background:var(--green)}
   .pd.total{grid-column:1/-1;font-size:12.5px;color:var(--ink);margin-top:2px}
+  .rdhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+  .rdp{font-size:13px;font-weight:700;color:var(--muted)}.rdp b{color:var(--ink);font-size:15px}
+  .rdg{font-size:11px;color:var(--muted);font-weight:700}
+  .rdline{font-size:14px;font-weight:650;line-height:1.4;margin:2px 0 6px}
+  .rdr{color:var(--muted);font-weight:600;font-size:12.5px}
+  .rddetail{font-size:12.5px;color:var(--muted);line-height:1.45;margin-bottom:8px}.rddetail b{color:var(--ink)}
+  .rdpace{font-size:12px;color:var(--muted);font-weight:600;line-height:1.6;margin-bottom:10px}.rdpace b{color:var(--ink)}
+  .rdwhat{white-space:nowrap}
+  .rdlean{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:6px;text-align:center}
+  #rdhours{width:52px;background:var(--bg);border:1px solid #2A394C;border-radius:7px;padding:3px 6px;color:var(--ink);font-size:12px;font-family:inherit;user-select:text;-webkit-user-select:text}
+  #rdclear{border:1px solid #2A394C;background:var(--bg);color:var(--amber);border-radius:7px;padding:3px 8px;font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer}
   .pd.total .bar{height:7px}.pd.total .bar i{background:var(--amber)}
   #startToday{width:100%;border:none;border-radius:13px;padding:15px;background:var(--green);color:#0D141F;font-weight:850;font-size:16px;font-family:inherit;cursor:pointer}
   .tdp{display:flex;gap:8px;margin-top:8px}
@@ -284,6 +303,12 @@
   <div class="chips"><button data-go="exam">Full exam</button><button data-go="exq">Exam questions</button><button data-go="twins">Twins drill</button><button data-go="sprint">Speed rounds</button><button data-go="miss">Miss list</button><button data-go="ref">Reference</button></div>
   <div id="nudge"></div>
   <div id="decks"></div>
+  <div id="backup">
+    <div class="bk-t">Backup &amp; restore</div>
+    <div class="bk-s">Export saves everything (cards, exams, study log, settings) to one JSON file you can keep anywhere. Import restores from that file. Do an export once a week.</div>
+    <div class="bk-row"><button id="bkexport" class="primary">Export backup</button><button id="bkimport">Import backup…</button><input id="bkfile" type="file" accept=".json,application/json"></div>
+    <div id="bkmsg"></div>
+  </div>
   <div id="resetline"><button id="resetbtn">Reset all progress</button><button id="unlinkbtn">Unlink GitHub</button></div>
 </div>
 
@@ -363,6 +388,7 @@
 
 <div id="toast"></div>
 
+<script src="ready.js"></script>
 <script src="cards-d12.js"></script>
 <script src="cards-d34.js"></script>
 <script src="cards-d45.js"></script>
@@ -438,6 +464,7 @@ let pbq={};
 let exq={};
 let exam="2026-10-28",days={},twins={},sprint={};
 let examHist=[]; // full-exam attempts (exam/engine.js)
+let studyHours=null,readyLog={}; // readiness estimator (ready.js)
 let remind={on:true,hours:4},lastStudy=0,owner="";
 try{owner=localStorage.getItem("secplus-gh-owner")||"";}catch(e){}
 let sessionsDone=0;
@@ -445,8 +472,8 @@ let updatedAt=0;
 let token="",gistId="";
 try{token=localStorage.getItem(TOKKEY)||"";gistId=localStorage.getItem(GIDKEY)||"";}catch(e){}
 
-function payload(){return {stats,pbq,exq,examHist,sessionsDone,updatedAt,exam,days,twins,sprint,remindOn:remind.on?"yes":"no",remindHours:remind.hours,lastStudy:lastStudy?new Date(lastStudy).toISOString():"",nudgeAfter:lastStudy?new Date(lastStudy+remind.hours*3600000).toISOString():""};}
-function adopt(d){stats=d.stats||{};pbq=d.pbq||{};exq=d.exq||{};examHist=Array.isArray(d.examHist)?d.examHist:[];sessionsDone=d.sessionsDone||0;updatedAt=d.updatedAt||0;exam=d.exam||"2026-10-28";days=d.days||{};twins=d.twins||{};sprint=d.sprint||{};remind={on:!(d.remindOn===false||d.remindOn==="no"),hours:+d.remindHours||4};lastStudy=d.lastStudy?(Date.parse(d.lastStudy)||0):0;}
+function payload(){return {stats,pbq,exq,examHist,studyHours,readyLog,sessionsDone,updatedAt,exam,days,twins,sprint,remindOn:remind.on?"yes":"no",remindHours:remind.hours,lastStudy:lastStudy?new Date(lastStudy).toISOString():"",nudgeAfter:lastStudy?new Date(lastStudy+remind.hours*3600000).toISOString():""};}
+function adopt(d){stats=d.stats||{};pbq=d.pbq||{};exq=d.exq||{};examHist=Array.isArray(d.examHist)?d.examHist:[];studyHours=(+d.studyHours>0)?+d.studyHours:null;readyLog=(d.readyLog&&typeof d.readyLog==="object")?d.readyLog:{};sessionsDone=d.sessionsDone||0;updatedAt=d.updatedAt||0;exam=d.exam||"2026-10-28";days=d.days||{};twins=d.twins||{};sprint=d.sprint||{};remind={on:!(d.remindOn===false||d.remindOn==="no"),hours:+d.remindHours||4};lastStudy=d.lastStudy?(Date.parse(d.lastStudy)||0):0;}
 function localGet(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null;}catch(e){return null;}}
 function localSet(){try{localStorage.setItem(KEY,JSON.stringify(payload()));}catch(e){}}
 
@@ -591,9 +618,41 @@ function deckBtn(k,t,s,n,color,special){
     <span><span class="t">${t}</span><span class="s">${s}</span></span>
     <span class="n">${n}</span></button>`;
 }
+/* ================= BACKUP / RESTORE ================= */
+const BK_APP="secplus",BK_VER=1;
+function bkStamp(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+function bkSummary(d){const cards=Object.keys(d.stats||{}).length,ex=(d.examHist||[]).length,dy=Object.keys(d.days||{}).length;return `${cards} cards seen · ${ex} exam${ex===1?"":"s"} · ${dy} study day${dy===1?"":"s"}`;}
+async function bkExport(){
+  const name=`secplus-backup-${bkStamp()}.json`;
+  const body=JSON.stringify({app:BK_APP,version:BK_VER,exportedAt:new Date().toISOString(),data:payload()},null,1);
+  const blob=new Blob([body],{type:"application/json"});
+  try{
+    const file=new File([blob],name,{type:"application/json"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPhone|iPad|Android/i.test(navigator.userAgent)){await navigator.share({files:[file],title:name});$("#bkmsg").textContent="Exported "+name;return;}
+  }catch(e){if(e&&e.name==="AbortError"){$("#bkmsg").textContent="Export cancelled.";return;}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+  $("#bkmsg").textContent="Exported "+name+" ("+bkSummary(payload())+").";
+}
+async function bkImport(file){
+  let obj;
+  try{obj=JSON.parse(await file.text());}catch(e){$("#bkmsg").textContent="That file isn't valid JSON.";return;}
+  const d=(obj&&obj.app&&obj.data)?obj.data:obj;
+  if(obj&&obj.app&&obj.app!==BK_APP){$("#bkmsg").textContent=`That's a ${obj.app==="netplus"?"Net+":obj.app==="secplus"?"Sec+":obj.app} backup, not a Sec+ one.`;return;}
+  if(!d||typeof d!=="object"||!d.stats||typeof d.stats!=="object"){$("#bkmsg").textContent="That doesn't look like a Gym Cards backup.";return;}
+  const when=obj.exportedAt?new Date(obj.exportedAt).toLocaleString():"unknown date";
+  if(!confirm(`Restore backup from ${when}?\n${bkSummary(d)}\n\nThis replaces the progress on this device and in your synced Gist. Your current progress is kept as a safety copy until the next import.`))return;
+  try{localStorage.setItem(KEY+"-preimport",JSON.stringify(payload()));}catch(e){}
+  adopt(d);
+  await saveState();
+  renderHome();
+  $("#bkmsg").textContent="Restored backup from "+when+".";
+}
+$("#bkexport").onclick=bkExport;
+$("#bkimport").onclick=()=>{$("#bkfile").value="";$("#bkfile").click();};
+$("#bkfile").onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)bkImport(f);};
 $("#resetbtn").onclick=async()=>{
   if(!confirm("Wipe all card progress?"))return;
-  stats={};pbq={};exq={};examHist=[];days={};twins={};sprint={};sessionsDone=0;await saveState();renderHome();
+  stats={};pbq={};exq={};examHist=[];readyLog={};days={};twins={};sprint={};sessionsDone=0;await saveState();renderHome();
 };
 
 /* ================= SESSION ================= */
@@ -976,7 +1035,7 @@ function xqSummary(){
   return `Scenario MC · ${seen}/${EXQ.length} seen`+(tot?` · ${Math.round(r/tot*100)}% right`:"");
 }
 function exqPick(n){
-  const unseen=shuffle(EXQ.filter(q=>!exq[q.id]));
+  const unseen=rdWeakPick(EXQ.filter(q=>!exq[q.id]),n,q=>q.d);
   const missed=shuffle(EXQ.filter(q=>exq[q.id]&&exq[q.id].last===0));
   const rest=shuffle(EXQ.filter(q=>exq[q.id]&&exq[q.id].last!==0));
   return unseen.concat(missed,rest).slice(0,n);
@@ -1053,7 +1112,7 @@ function projection(){
 }
 function todaySet(){
   const due=shuffle(CARDS.filter(isDue)).slice(0,12);
-  const weak=shuffle(CARDS.filter(isWeak)).slice(0,Math.max(0,20-due.length));
+  const weak=rdWeakPick(CARDS.filter(isWeak),Math.max(0,20-due.length),c=>rdDomainOf(c.c));
   let set=due.concat(weak);
   if(set.length<20)set=set.concat(shuffle(CARDS.filter(c=>!set.includes(c))).slice(0,20-set.length));
   return shuffle(set);
@@ -1072,14 +1131,15 @@ function renderToday(){
   const dte=daysToExam(),pr=projection(),st=streakDays(),set=todaySet(),pb=todayPbqs();
   const idleH=lastStudy?Math.floor((Date.now()-lastStudy)/3600000):null;
   const idleLine=(remind.on&&idleH!==null&&idleH>=remind.hours)?`<div class="idle">${idleH} hours since your last card. Today's set is waiting.</div>`:"";
-  const cdTxt=dte>0?`${dte} day${dte===1?"":"s"}<span>to exam</span>`:dte===0?"Exam day":"Exam date passed<span>tap to set</span>";
+  const cdTxt=dte>0?`${dte} day${dte===1?"":"s"}<span>to exam · tap to change</span>`:dte===0?"Exam day":"Exam date passed<span>tap to set</span>";
   $("#today").innerHTML=`<div class="tdrow"><div class="cd" id="examcd">${cdTxt}</div><div class="st">${st?`<b>${st}</b>-day streak`:"start a streak today"}</div></div>
-  ${idleLine}<div class="proj">${pr.rows.map(r=>`<div class="pd">${r.name} ${r.pct}%<div class="bar"><i style="width:${r.pct}%"></i></div></div>`).join("")}<div class="pd total">Projected from card mastery: ${pr.total}%<div class="bar"><i style="width:${pr.total}%"></i></div></div></div>
-  <button id="startToday">Start today's set: ${set.length} cards${due?` (${Math.min(due,12)} due for review)`:""}</button>
+  ${idleLine}${rdHtml()}
+  <button id="startToday">Start today's set: ${set.length} cards${due?` (${Math.min(due,12)} due for review)`:""}</button><div class="rdlean">${rdLeanTxt()}</div>
   <div class="tdp">${pb.map(p=>`<button data-pbq="${p.id}">${esc(p.title)}<small>Today's PBQ · ${TYPENAME[p.type]}</small></button>`).join("")}<button data-xq="1">10 exam-style questions<small>${xqSummary()}</small></button></div>`;
   $("#today [data-xq]").onclick=()=>startExq(10);
   $("#examcd").onclick=()=>{const v=prompt("Exam date (YYYY-MM-DD)",exam);if(v&&/^\d{4}-\d{2}-\d{2}$/.test(v.trim())){exam=v.trim();saveState();renderHome();}};
   $("#startToday").onclick=()=>startTodaySet(set);
+  rdBind();
   document.querySelectorAll(".tdp button[data-pbq]").forEach(b=>b.onclick=()=>{$("#home").style.display="none";startPbq(b.dataset.pbq);});
 }
 function startTodaySet(set){

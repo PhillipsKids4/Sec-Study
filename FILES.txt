@@ -1,0 +1,20 @@
+Sec+ Gym Cards — what each file is (flat layout: everything at the repo root)
+index.html          the app (open this; everything else is loaded by it) Includes Backup & restore (export/import JSON) on the home screen.
+ready.js            readiness estimator (predicted score, pace, date)
+manifest.json       phone home-screen settings (name, icon list)
+icon-180.png        iPhone home-screen icon
+icon-192.png        Android / browser icon
+icon-512.png        large icon for install prompts
+icon-source-1024.png  original artwork, not used by the app (keep for future edits)
+README.md           short description of the repo
+cards-d12.js        flashcards, domains 1-2
+cards-d34.js        flashcards, domains 3-4 (part 1)
+cards-d45.js        flashcards, domains 4 (part 2) and 5
+exq.js              the 92 exam-style practice questions
+twins.js            the 45 confusable-twin pairs
+lab.js              the 25 PBQ Lab items
+engine.js           full-exam mode code
+exam.css            full-exam mode styles
+bank-a.js / bank-b.js / bank-c.js   Exam A/B/C questions (85 each)
+pbqs.js             the 15 exam PBQs
+CARDS_SPEC.md, EXAM_SPEC.md, PRACTICE_SPEC.md, CATS.md, check-*.js   authoring specs + validators, not used by the app
